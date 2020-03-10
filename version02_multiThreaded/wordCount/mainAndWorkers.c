@@ -16,6 +16,9 @@ static void *workers(void *id);
 /** \brief worker threads return status array */
 int statusWorker[N];
 
+/** \brief main thread return status value */
+int statusMain;
+
 int main(void) {
     pthread_t tIdWorker[N];
     unsigned int worker[N];

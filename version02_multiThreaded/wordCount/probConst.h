@@ -14,13 +14,11 @@
 /* Generic parameters */
 
 /** \brief number of producers / consumers */
-#define N 10
+#define N 1
 
-/** \brief data transfer region nominal capacity (in number of values that can
- * be stored) */
-#define K 2
+#define MAXSIZE 50     // maximum size possible for a word
+#define MAXCHARSIZE 6  // maximum size in bytes for a character
 
-/** \brief number of iterations of the life cycle */
-#define M 10
+#define BUFFERSIZE 1000
 
 #endif /* PROBCONST_H_ */

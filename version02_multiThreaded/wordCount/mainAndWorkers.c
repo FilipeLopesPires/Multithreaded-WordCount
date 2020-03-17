@@ -7,6 +7,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "chunk.h"
 #include "probConst.h"
 #include "textProc.h"
 
@@ -36,17 +37,17 @@ int main(void) {
 
     /* generation of intervening entities threads */
 
-    for (i = 0; i < N; i++)
-        if (pthread_create(&tIdWorker[i], NULL, worker, &worker[i]) !=
+    for (i = 0; i < N; i++) {
+        if (pthread_create(&tIdWorker[i], NULL, workers, &worker[i]) !=
             0) /* thread worker */
         {
             perror("error on creating thread worker");
             exit(EXIT_FAILURE);
         }
+    }
 
     /* waiting for the termination of the intervening entities threads */
 
-    printf("\nFinal report\n");
     for (i = 0; i < N; i++) {
         if (pthread_join(tIdWorker[i], (void *)&status_p) !=
             0) /* thread worker */
@@ -63,17 +64,11 @@ int main(void) {
     exit(EXIT_SUCCESS);
 }
 
-static void *worker(void *par) {
-    unsigned int id = *((unsigned int *)par), /* worker id */
-        val;                                  /* produced value */
-    int i;                                    /* counting variable */
+static void *workers(void *par) {
+    unsigned int id = *((unsigned int *)par);
 
-    for (i = 0; i < M; i++) {
-        val = 1000 * id + i; /* produce a value */
-        putVal(id, val);     /* store a value */
-        usleep((unsigned int)floor(40.0 * random() / RAND_MAX +
-                                   1.5)); /* do something else */
-    }
+    char *files[] = {"filename0", "file"};
+    presentFilenames(2, files);
 
     statusWorker[id] = EXIT_SUCCESS;
     pthread_exit(&statusWorker[id]);

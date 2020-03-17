@@ -1,18 +1,18 @@
 #include <errno.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
+#include "chunk.h"
 #include "probConst.h"
 
 char delimeters[25][MAXCHARSIZE] = {
     " ", "-", "–", "—",  ".",  ",",  ":",  ";", "(", ")", "[", "]", "{",
     "}", "?", "!", "\n", "\t", "\r", "\"", "“", "”", "«", "»", "…"};
-
-char textBuffer[1000];
-char tmpWord[50];
 
 /** \brief worker threads return status array */
 extern int statusWorker[N];
@@ -20,11 +20,39 @@ extern int statusWorker[N];
 /** \brief main thread return status value */
 extern int statusMain;
 
+bool areFilenamesPresented;
+
 pthread_mutex_t accessCR = PTHREAD_MUTEX_INITIALIZER;
+
+pthread_once_t init = PTHREAD_ONCE_INIT;
 
 pthread_cond_t filenamesPresented;
 
-char* getTextChunk(int workerId) {
+char textBuffer[BUFFERSIZE];
+char tmpWord[MAXSIZE];
+FILE** files;
+char** filenames;
+int** wordSizeResults;
+int** vowelCountResults;
+int* numberWordsResults;
+int* maximumSizeWordResults;
+int* minimumSizeWordResults;
+int filesSize;
+int currentFileIdx = 0;
+char symbol;
+char completeSymbol[MAXCHARSIZE];  // buffer for complex character construction
+int ones;
+bool incrementFileIdx;
+
+void initialization(void) {
+    strcpy(textBuffer, "");
+    strcpy(tmpWord, "");
+    incrementFileIdx = false;
+
+    pthread_cond_init(&filenamesPresented, NULL);
+}
+
+Chunk getTextChunk(int workerId) {
     if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
         0) /* enter monitor */
     {
@@ -33,8 +61,78 @@ char* getTextChunk(int workerId) {
         statusWorker[workerId] = EXIT_FAILURE;
         pthread_exit(&statusWorker[workerId]);
     }
+    pthread_once(&init, initialization);
 
-    // TODO   ...................................
+    while (areFilenamesPresented) {
+        if ((statusWorker[workerId] =
+                 pthread_cond_wait(&filenamesPresented, &accessCR)) != 0) {
+            errno = statusWorker[workerId]; /* save error in errno */
+            perror("error on waiting in fifoFull");
+            statusWorker[workerId] = EXIT_FAILURE;
+            pthread_exit(&statusWorker[workerId]);
+        }
+    }
+
+    strcpy(textBuffer, tmpWord);
+    strcpy(tmpWord, "");
+    while (strlen(textBuffer) < BUFFERSIZE) {
+        symbol = getc(files[currentFileIdx]);
+        if (symbol == EOF) {
+            if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
+                strcat(textBuffer, tmpWord);
+            }
+            incrementFileIdx = true;
+            break;
+        }
+        strcpy(completeSymbol, "");
+        ones = 0;
+
+        // Verify the number of 1s in the most significant bits
+        for (int i = sizeof(symbol) * CHAR_BIT - 1; i >= 0; --i) {
+            int bit = (symbol >> i) & 1;
+            if (bit == 0) {
+                break;
+            }
+            ones++;
+        }
+
+        // Build the complete character (if it consists of more than 1 byte)
+        strncat(completeSymbol, &symbol, 1);
+        for (int i = 1; i < ones; i++) {
+            symbol = getc(files[currentFileIdx]);
+            strncat(completeSymbol, &symbol, 1);
+        }
+
+        bool leaveLoop = false;
+        // Check if character is a delimiter
+        for (int i = 0; i < sizeof(delimeters) / sizeof(delimeters[0]); i++) {
+            if (strcmp(completeSymbol, delimeters[i]) == 0) {
+                if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
+                    strcat(textBuffer, tmpWord);
+                    strcat(textBuffer, completeSymbol);
+                }
+                leaveLoop = true;
+            }
+        }
+        if (leaveLoop) {
+            break;
+        }
+
+        strcat(tmpWord, completeSymbol);
+    }
+
+    struct Chunk chunk = {.fileId = -1, .textChunk = ""};
+    if (strlen(textBuffer) == 0) {
+        return chunk;
+    } else {
+        chunk.fileId = currentFileIdx;
+        strcpy(chunk.textChunk, textBuffer);
+    }
+
+    if (incrementFileIdx) {
+        currentFileIdx++;
+        incrementFileIdx = false;
+    }
 
     if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
         0) /* exit monitor */
@@ -45,9 +143,11 @@ char* getTextChunk(int workerId) {
         pthread_exit(&statusWorker[workerId]);
     }
 
-    return;
+    return chunk;
 }
-void savePartialResults(int workerId, int* wordCount, int* vowelCount) {
+
+void savePartialResults(int workerId, int fileId, int* wordCount,
+                        int wordSizeSize, int* vowelCount, int vowelCountSize) {
     if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
         0) /* enter monitor */
     {
@@ -56,8 +156,22 @@ void savePartialResults(int workerId, int* wordCount, int* vowelCount) {
         statusWorker[workerId] = EXIT_FAILURE;
         pthread_exit(&statusWorker[workerId]);
     }
+    pthread_once(&init, initialization);
 
-    // TODO   ...................................
+    for (int i = 0; i < wordSizeSize; i++) {
+        wordSizeResults[fileId][i] += wordCount[i];
+        numberWordsResults[fileId] += wordCount[i];
+        if (i > maximumSizeWordResults[fileId] && wordCount[i] > 0) {
+            maximumSizeWordResults[fileId] = i;
+        }
+        if (i < minimumSizeWordResults[fileId] && wordCount[i] > 0) {
+            minimumSizeWordResults[fileId] = i;
+        }
+    }
+
+    for (int i = 0; i < vowelCountSize; i++) {
+        vowelCountResults[fileId][i] = vowelCount[i];
+    }
 
     if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
         0) /* exit monitor */
@@ -68,41 +182,123 @@ void savePartialResults(int workerId, int* wordCount, int* vowelCount) {
         pthread_exit(&statusWorker[workerId]);
     }
 }
-void presentFilenames(char* filenames) {
+
+void presentFilenames(int size, char** fileNames) {
     if ((statusMain = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
     {
-        errno = statusWorker[workerId]; /* save error in errno */
+        errno = statusMain; /* save error in errno */
         perror("error on entering monitor(CF)");
-        statusWorker[workerId] = EXIT_FAILURE;
-        pthread_exit(&statusWorker[workerId]);
+        statusMain = EXIT_FAILURE;
+        pthread_exit(&statusMain);
+    }
+    pthread_once(&init, initialization);
+
+    if (size > 0) {
+        files = malloc(sizeof(FILE*) * (size));
+
+        filesSize = size;
+        wordSizeResults = malloc(sizeof(int*) * (size));
+        vowelCountResults = malloc(sizeof(int*) * (size));
+        maximumSizeWordResults = malloc(sizeof(int) * (size));
+        minimumSizeWordResults = malloc(sizeof(int) * (size));
+        numberWordsResults = malloc(sizeof(int) * (size));
+        for (int i = 0; i < size; i++) {
+            maximumSizeWordResults[i] = 0;
+            minimumSizeWordResults[i] = MAXSIZE;
+            numberWordsResults[i] = 0;
+        }
+        filenames = fileNames;
+        for (int i = 0; i < size; i++) {
+            wordSizeResults[i] = malloc(sizeof(int) * (MAXSIZE));
+            vowelCountResults[i] = malloc(sizeof(int) * (MAXSIZE));
+            for (int j = 0; j < MAXSIZE; j++) {
+                wordSizeResults[i][j] = 0;
+                vowelCountResults[i][j] = 0;
+            }
+            files[i] = fopen(filenames[i], "r");
+        }
+
+        areFilenamesPresented = true;
     }
 
-    // TODO   ...................................
+    if ((statusMain = pthread_cond_signal(&filenamesPresented)) != 0) {
+        errno = statusMain; /* save error in errno */
+        perror("error on signaling in fifoEmpty");
+        statusMain = EXIT_FAILURE;
+        pthread_exit(&statusMain);
+    }
 
     if ((statusMain = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
     {
-        errno = statusWorker[workerId]; /* save error in errno */
+        errno = statusMain; /* save error in errno */
         perror("error on exiting monitor(CF)");
-        statusWorker[workerId] = EXIT_FAILURE;
-        pthread_exit(&statusWorker[workerId]);
+        statusMain = EXIT_FAILURE;
+        pthread_exit(&statusMain);
     }
 }
+
 void printResults() {
     if ((statusMain = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
     {
-        errno = statusWorker[workerId]; /* save error in errno */
+        errno = statusMain; /* save error in errno */
         perror("error on entering monitor(CF)");
-        statusWorker[workerId] = EXIT_FAILURE;
-        pthread_exit(&statusWorker[workerId]);
+        statusMain = EXIT_FAILURE;
+        pthread_exit(&statusMain);
     }
+    pthread_once(&init, initialization);
+    int i;
+    for (int k = 0; k < filesSize; k++) {
+        // Print information table
+        printf("File name: %s\n", filenames[k]);
+        printf("Total number of words: %d\n", numberWordsResults[k]);
+        printf("Word length\n");
 
-    // TODO   ...................................
+        printf("   ");
+        for (i = 1; i < maximumSizeWordResults[k] + 1; i++) {
+            printf("%6d", i);
+        }
+        printf("\n   ");
+        for (i = 1; i < maximumSizeWordResults[k] + 1; i++) {
+            printf("%6d", wordSizeResults[k][i]);
+        }
+        printf("\n   ");
+        for (i = 1; i < maximumSizeWordResults[k] + 1; i++) {
+            printf("%6.2f", ((float)wordSizeResults[k][i] * 100.0) /
+                                (float)numberWordsResults[k]);
+        }
+        for (i = 0; i < maximumSizeWordResults[k] + 1; i++) {
+            printf("\n%2d ", i);
+            for (int j = 1; j < i; j++) {
+                printf("%6s", " ");
+            }
+            if (i == 0) {
+                for (int j = 1; j < maximumSizeWordResults[k] + 1; j++) {
+                    if (wordSizeResults[k][j] > 0) {
+                        printf("%6.1f", (vowelCountResults[i][j] * 100.0) /
+                                            (float)wordSizeResults[k][j]);
+                    } else {
+                        printf("%6.1f", 0.0);
+                    }
+                }
+            } else {
+                for (int j = i; j < maximumSizeWordResults[k] + 1; j++) {
+                    if (wordSizeResults[k][j] > 0) {
+                        printf("%6.1f", (vowelCountResults[i][j] * 100.0) /
+                                            (float)wordSizeResults[k][j]);
+                    } else {
+                        printf("%6.1f", 0.0);
+                    }
+                }
+            }
+        }
+        printf("\n\n");
+    }
 
     if ((statusMain = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
     {
-        errno = statusWorker[workerId]; /* save error in errno */
+        errno = statusMain; /* save error in errno */
         perror("error on exiting monitor(CF)");
-        statusWorker[workerId] = EXIT_FAILURE;
-        pthread_exit(&statusWorker[workerId]);
+        statusMain = EXIT_FAILURE;
+        pthread_exit(&statusMain);
     }
 }

@@ -1,12 +1,13 @@
 /**
  *  \file textProc.h (interface file)
  *
- *  \brief Program that reads in succession several text files and prints a listing of the occurring 
- *  frequency of word lengths and the number of vowels in each word for each of the supplied texts.
+ *  \brief Program that reads in succession several text files and prints a
+ * listing of the occurring frequency of word lengths and the number of vowels
+ * in each word for each of the supplied texts.
  *
  *  Synchronization based on monitors.
- *  Both threads and the monitor are implemented using the pthread library which enables the creation of a
- *  monitor of the Lampson / Redell type.
+ *  Both threads and the monitor are implemented using the pthread library which
+ * enables the creation of a monitor of the Lampson / Redell type.
  *
  *  Data transfer region implemented as a monitor.
  *
@@ -25,7 +26,7 @@
 #include "chunk.h"
 
 extern Chunk getTextChunk(int workerId);
-extern void savePartialResults(int workerId, int fileId, int* wordCount,
+extern void savePartialResults(int workerId, int fileId, int* wordSize,
                                int wordSizeSize, int** vowelCount,
                                int vowelCountSizeX, int vowelCountSizeY);
 extern void presentFilenames(int size, char** filenames);

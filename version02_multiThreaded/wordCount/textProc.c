@@ -76,7 +76,8 @@ void initialization(void) {
 }
 
 Chunk getTextChunk(int workerId) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
+        0) /* enter monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
@@ -95,68 +96,76 @@ Chunk getTextChunk(int workerId) {
         }
     }
 
-    strcpy(textBuffer, tmpWord);
-    strcpy(tmpWord, "");
-    while (strlen(textBuffer) <= BUFFERSIZE) {
-        symbol = getc(files[currentFileIdx]);
-        if (symbol == EOF) {
-            if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
-                strcat(textBuffer, tmpWord);
-                strcpy(tmpWord, "");
-            }
-            incrementFileIdx = true;
-            break;
-        }
-        strcpy(completeSymbol, "");
-        ones = 0;
-
-        // Verify the number of 1s in the most significant bits
-        for (int i = sizeof(symbol) * CHAR_BIT - 1; i >= 0; --i) {
-            int bit = (symbol >> i) & 1;
-            if (bit == 0) {
-                break;
-            }
-            ones++;
-        }
-
-        // Build the complete character (if it consists of more than 1 byte)
-        strncat(completeSymbol, &symbol, 1);
-        for (int i = 1; i < ones; i++) {
+    if (currentFileIdx < filesSize) {
+        strcpy(textBuffer, tmpWord);
+        strcpy(tmpWord, "");
+        while (strlen(textBuffer) <= BUFFERSIZE) {
             symbol = getc(files[currentFileIdx]);
-            strncat(completeSymbol, &symbol, 1);
-        }
-
-        bool leaveLoop = false;
-        // Check if character is a delimiter
-        for (int i = 0; i < sizeof(delimiters) / sizeof(delimiters[0]); i++) {
-            if (strcmp(completeSymbol, delimiters[i]) == 0) {
+            if (symbol == EOF) {
                 if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
                     strcat(textBuffer, tmpWord);
                     strcpy(tmpWord, "");
-                } else {
-                    leaveLoop = true;
+                }
+                incrementFileIdx = true;
+                break;
+            }
+            strcpy(completeSymbol, "");
+            ones = 0;
+
+            // Verify the number of 1s in the most significant bits
+            for (int i = sizeof(symbol) * CHAR_BIT - 1; i >= 0; --i) {
+                int bit = (symbol >> i) & 1;
+                if (bit == 0) {
+                    break;
+                }
+                ones++;
+            }
+
+            // Build the complete character (if it consists of more than 1 byte)
+            strncat(completeSymbol, &symbol, 1);
+            for (int i = 1; i < ones; i++) {
+                symbol = getc(files[currentFileIdx]);
+                strncat(completeSymbol, &symbol, 1);
+            }
+
+            bool leaveLoop = false;
+            // Check if character is a delimiter
+            for (int i = 0; i < sizeof(delimiters) / sizeof(delimiters[0]);
+                 i++) {
+                if (strcmp(completeSymbol, delimiters[i]) == 0) {
+                    if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
+                        strcat(textBuffer, tmpWord);
+                        strcpy(tmpWord, "");
+                    } else {
+                        leaveLoop = true;
+                    }
                 }
             }
-        }
-        if (leaveLoop) {
-            break;
-        }
+            if (leaveLoop) {
+                break;
+            }
 
-        strcat(tmpWord, completeSymbol);
+            strcat(tmpWord, completeSymbol);
+        }
     }
 
-    struct Chunk chunk = {.fileId = -1, .textChunk = textBuffer};
+    struct Chunk* chunk = malloc(sizeof(struct Chunk));
     if (strlen(textBuffer) != 0) {
-        chunk.fileId = currentFileIdx;
-        // strcat(chunk.textChunk, textBuffer);
+        chunk->fileId = currentFileIdx;
+        chunk->textChunk = strdup(textBuffer);
+    } else {
+        chunk->fileId = -1;
+        chunk->textChunk = strdup("");
     }
+    strcpy(textBuffer, "");
 
     if (incrementFileIdx) {
         currentFileIdx++;
         incrementFileIdx = false;
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
+        0) /* exit monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
@@ -164,11 +173,14 @@ Chunk getTextChunk(int workerId) {
         pthread_exit(&statusWorker[workerId]);
     }
 
-    return chunk;
+    return *chunk;
 }
 
-void savePartialResults(int workerId, int fileId, int* wordSize, int wordSizeSize, int** vowelCount, int vowelCountSizeX, int vowelCountSizeY) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
+void savePartialResults(int workerId, int fileId, int* wordSize,
+                        int wordSizeSize, int** vowelCount, int vowelCountSizeX,
+                        int vowelCountSizeY) {
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
+        0) /* enter monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
@@ -194,7 +206,8 @@ void savePartialResults(int workerId, int fileId, int* wordSize, int wordSizeSiz
         }
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
+        0) /* exit monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
@@ -222,13 +235,11 @@ void presentFilenames(int size, char** fileNames) {
         maximumSizeWordResults = malloc(sizeof(int) * (size));
         minimumSizeWordResults = malloc(sizeof(int) * (size));
         numberWordsResults = malloc(sizeof(int) * (size));
+        filenames = fileNames;
         for (int i = 0; i < size; i++) {
             maximumSizeWordResults[i] = 0;
             minimumSizeWordResults[i] = MAXSIZE;
             numberWordsResults[i] = 0;
-        }
-        filenames = fileNames;
-        for (int i = 0; i < size; i++) {
             wordSizeResults[i] = malloc(sizeof(int) * (MAXSIZE));
             vowelCountResults[i] = malloc(sizeof(int) * (MAXSIZE));
             for (int j = 0; j < MAXSIZE; j++) {
@@ -243,13 +254,13 @@ void presentFilenames(int size, char** fileNames) {
 
         areFilenamesPresented = true;
         printf("Files presented.\n");
-    }
 
-    if ((statusMain = pthread_cond_signal(&filenamesPresented)) != 0) {
-        errno = statusMain; /* save error in errno */
-        perror("error on signaling in fifoEmpty");
-        statusMain = EXIT_FAILURE;
-        pthread_exit(&statusMain);
+        if ((statusMain = pthread_cond_signal(&filenamesPresented)) != 0) {
+            errno = statusMain; /* save error in errno */
+            perror("error on signaling in fifoEmpty");
+            statusMain = EXIT_FAILURE;
+            pthread_exit(&statusMain);
+        }
     }
 
     if ((statusMain = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
@@ -298,7 +309,8 @@ void printResults() {
             if (i == 0) {
                 for (int j = 1; j < maximumSizeWordResults[k] + 1; j++) {
                     if (wordSizeResults[k][j] > 0) {
-                        printf("%6.1f", (vowelCountResults[k][i][j] * 100.0) / (float)wordSizeResults[k][j]);
+                        printf("%6.1f", (vowelCountResults[k][i][j] * 100.0) /
+                                            (float)wordSizeResults[k][j]);
                     } else {
                         printf("%6.1f", 0.0);
                     }
@@ -306,7 +318,8 @@ void printResults() {
             } else {
                 for (int j = i; j < maximumSizeWordResults[k] + 1; j++) {
                     if (wordSizeResults[k][j] > 0) {
-                        printf("%6.1f", (vowelCountResults[k][i][j] * 100.0) / (float)wordSizeResults[k][j]);
+                        printf("%6.1f", (vowelCountResults[k][i][j] * 100.0) /
+                                            (float)wordSizeResults[k][j]);
                     } else {
                         printf("%6.1f", 0.0);
                     }

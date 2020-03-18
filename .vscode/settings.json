@@ -11,6 +11,9 @@
         "string_view": "c",
         "tuple": "c",
         "wordcount.h": "c",
-        "random": "c"
+        "random": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "thread": "c"
     }
 }

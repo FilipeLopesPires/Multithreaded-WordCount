@@ -26,8 +26,8 @@
 
 extern Chunk getTextChunk(int workerId);
 extern void savePartialResults(int workerId, int fileId, int* wordCount,
-                               int wordSizeSize, int* vowelCount,
-                               int vowelCountSize);
+                               int wordSizeSize, int** vowelCount,
+                               int vowelCountSizeX, int vowelCountSizeY);
 extern void presentFilenames(int size, char** filenames);
 extern void printResults();
 

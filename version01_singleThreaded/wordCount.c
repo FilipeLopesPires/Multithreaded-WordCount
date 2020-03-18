@@ -53,8 +53,7 @@ int main(int argc, char **argv) {
             char completeSymbol[MAXCHARSIZE];   // buffer for complex character construction
             int wordCount[MAXSIZE];             // array containing the number of words found whose size is equal to the respective index
             int vowelsCount[MAXSIZE][MAXSIZE];  // 2D array containing the number of words found whose number of vowels and word size are equal to x and y
-            float vowelsAvgCount[MAXSIZE];      // array containing the average number of vowels found in a word whose size is equal to the respective index
-
+            
             for (i = 0; i < MAXSIZE; i++) {
                 wordCount[i] = 0;
                 for (j = 0; j < MAXSIZE; j++) {

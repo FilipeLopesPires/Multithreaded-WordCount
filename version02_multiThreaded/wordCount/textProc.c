@@ -55,7 +55,7 @@ char tmpWord[MAXSIZE];
 FILE** files;
 char** filenames;
 int** wordSizeResults;
-int** vowelCountResults;
+int*** vowelCountResults;
 int* numberWordsResults;
 int* maximumSizeWordResults;
 int* minimumSizeWordResults;
@@ -76,8 +76,7 @@ void initialization(void) {
 }
 
 Chunk getTextChunk(int workerId) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
-        0) /* enter monitor */
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
@@ -157,8 +156,7 @@ Chunk getTextChunk(int workerId) {
         incrementFileIdx = false;
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
-        0) /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
@@ -169,10 +167,8 @@ Chunk getTextChunk(int workerId) {
     return chunk;
 }
 
-void savePartialResults(int workerId, int fileId, int* wordCount,
-                        int wordSizeSize, int* vowelCount, int vowelCountSize) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
-        0) /* enter monitor */
+void savePartialResults(int workerId, int fileId, int* wordSize, int wordSizeSize, int** vowelCount, int vowelCountSizeX, int vowelCountSizeY) {
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
@@ -182,22 +178,23 @@ void savePartialResults(int workerId, int fileId, int* wordCount,
     pthread_once(&init, initialization);
 
     for (int i = 0; i < wordSizeSize; i++) {
-        wordSizeResults[fileId][i] += wordCount[i];
-        numberWordsResults[fileId] += wordCount[i];
-        if (i > maximumSizeWordResults[fileId] && wordCount[i] > 0) {
+        wordSizeResults[fileId][i] += wordSize[i];
+        numberWordsResults[fileId] += wordSize[i];
+        if (i > maximumSizeWordResults[fileId] && wordSize[i] > 0) {
             maximumSizeWordResults[fileId] = i;
         }
-        if (i < minimumSizeWordResults[fileId] && wordCount[i] > 0) {
+        if (i < minimumSizeWordResults[fileId] && wordSize[i] > 0) {
             minimumSizeWordResults[fileId] = i;
         }
     }
 
-    for (int i = 0; i < vowelCountSize; i++) {
-        vowelCountResults[fileId][i] = vowelCount[i];
+    for (int i = 0; i < vowelCountSizeX; i++) {
+        for (int j = 0; j < vowelCountSizeY; j++) {
+            vowelCountResults[fileId][i][j] = vowelCount[i][j];
+        }
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
-        0) /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
@@ -236,7 +233,10 @@ void presentFilenames(int size, char** fileNames) {
             vowelCountResults[i] = malloc(sizeof(int) * (MAXSIZE));
             for (int j = 0; j < MAXSIZE; j++) {
                 wordSizeResults[i][j] = 0;
-                vowelCountResults[i][j] = 0;
+                vowelCountResults[i][j] = malloc(sizeof(int) * (MAXSIZE));
+                for (int l = 0; l < MAXSIZE; l++) {
+                    vowelCountResults[i][j][l] = 0;
+                }
             }
             files[i] = fopen(filenames[i], "r");
         }
@@ -298,8 +298,7 @@ void printResults() {
             if (i == 0) {
                 for (int j = 1; j < maximumSizeWordResults[k] + 1; j++) {
                     if (wordSizeResults[k][j] > 0) {
-                        printf("%6.1f", (vowelCountResults[i][j] * 100.0) /
-                                            (float)wordSizeResults[k][j]);
+                        printf("%6.1f", (vowelCountResults[k][i][j] * 100.0) / (float)wordSizeResults[k][j]);
                     } else {
                         printf("%6.1f", 0.0);
                     }
@@ -307,8 +306,7 @@ void printResults() {
             } else {
                 for (int j = i; j < maximumSizeWordResults[k] + 1; j++) {
                     if (wordSizeResults[k][j] > 0) {
-                        printf("%6.1f", (vowelCountResults[i][j] * 100.0) /
-                                            (float)wordSizeResults[k][j]);
+                        printf("%6.1f", (vowelCountResults[k][i][j] * 100.0) / (float)wordSizeResults[k][j]);
                     } else {
                         printf("%6.1f", 0.0);
                     }

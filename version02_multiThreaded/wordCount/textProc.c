@@ -1,12 +1,13 @@
 /**
  *  \file textProc.c (implementation file)
  *
- *  \brief Program that reads in succession several text files and prints a listing of the occurring 
- *  frequency of word lengths and the number of vowels in each word for each of the supplied texts.
+ *  \brief Program that reads in succession several text files and prints a
+ * listing of the occurring frequency of word lengths and the number of vowels
+ * in each word for each of the supplied texts.
  *
  *  Synchronization based on monitors.
- *  Both threads and the monitor are implemented using the pthread library which enables the creation of a
- *  monitor of the Lampson / Redell type.
+ *  Both threads and the monitor are implemented using the pthread library which
+ * enables the creation of a monitor of the Lampson / Redell type.
  *
  *  Data transfer region implemented as a monitor.
  *
@@ -75,7 +76,8 @@ void initialization(void) {
 }
 
 Chunk getTextChunk(int workerId) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
+        0) /* enter monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
@@ -85,7 +87,8 @@ Chunk getTextChunk(int workerId) {
     pthread_once(&init, initialization);
 
     while (!areFilenamesPresented) {
-        if ((statusWorker[workerId] = pthread_cond_wait(&filenamesPresented, &accessCR)) != 0) {
+        if ((statusWorker[workerId] =
+                 pthread_cond_wait(&filenamesPresented, &accessCR)) != 0) {
             errno = statusWorker[workerId]; /* save error in errno */
             perror("error on waiting in fifoFull");
             statusWorker[workerId] = EXIT_FAILURE;
@@ -95,11 +98,12 @@ Chunk getTextChunk(int workerId) {
 
     strcpy(textBuffer, tmpWord);
     strcpy(tmpWord, "");
-    while (strlen(textBuffer) < BUFFERSIZE) {
+    while (strlen(textBuffer) <= BUFFERSIZE) {
         symbol = getc(files[currentFileIdx]);
         if (symbol == EOF) {
             if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
                 strcat(textBuffer, tmpWord);
+                strcpy(tmpWord, "");
             }
             incrementFileIdx = true;
             break;
@@ -129,9 +133,10 @@ Chunk getTextChunk(int workerId) {
             if (strcmp(completeSymbol, delimiters[i]) == 0) {
                 if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
                     strcat(textBuffer, tmpWord);
-                    strcat(textBuffer, completeSymbol);
+                    strcpy(tmpWord, "");
+                } else {
+                    leaveLoop = true;
                 }
-                leaveLoop = true;
             }
         }
         if (leaveLoop) {
@@ -141,24 +146,19 @@ Chunk getTextChunk(int workerId) {
         strcat(tmpWord, completeSymbol);
     }
 
-    struct Chunk chunk = {.fileId = -1, .textChunk = ""};
-    if (strlen(textBuffer) == 0) {
-        return chunk;
-    } else {
+    struct Chunk chunk = {.fileId = -1, .textChunk = textBuffer};
+    if (strlen(textBuffer) != 0) {
         chunk.fileId = currentFileIdx;
-        printf(""+sizeof(chunk.textChunk));
-        //strcpy(chunk.textChunk, textBuffer);
+        // strcat(chunk.textChunk, textBuffer);
     }
-
-    printf("here.\n");
-    return chunk;
 
     if (incrementFileIdx) {
         currentFileIdx++;
         incrementFileIdx = false;
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
+        0) /* exit monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
@@ -171,7 +171,8 @@ Chunk getTextChunk(int workerId) {
 
 void savePartialResults(int workerId, int fileId, int* wordCount,
                         int wordSizeSize, int* vowelCount, int vowelCountSize) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
+        0) /* enter monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
@@ -195,7 +196,8 @@ void savePartialResults(int workerId, int fileId, int* wordCount,
         vowelCountResults[fileId][i] = vowelCount[i];
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
+        0) /* exit monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");

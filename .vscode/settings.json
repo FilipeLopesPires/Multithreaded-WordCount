@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "array": "c",
+        "hash_map": "c",
+        "hash_set": "c",
+        "deque": "c",
+        "list": "c",
+        "string": "c",
+        "vector": "c",
+        "iterator": "c",
+        "string_view": "c",
+        "tuple": "c",
+        "wordcount.h": "c",
+        "random": "c"
+    }
+}

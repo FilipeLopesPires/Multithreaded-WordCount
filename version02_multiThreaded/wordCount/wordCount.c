@@ -22,14 +22,25 @@
 #include <sys/stat.h>
 
 #include <pthread.h>
+//#include <stdbool.h>
+#include <unistd.h>
+#include <math.h>
+#include <time.h>
 
 #include "wordCount.h"
+#include "textProc.h"
+#include "chunk.h"
 
 /** \brief worker life cycle routine */
 static void *worker (void *id);
 
 /** \brief worker threads return status array */
 int statusWorker[NUMWORKERS];
+
+/** \brief main thread return status value */
+int statusMain;
+
+int tmp = 0;
 
 int main (int argc, char **argv) {
 
@@ -43,15 +54,22 @@ int main (int argc, char **argv) {
     pthread_t workerThreadID[NUMWORKERS];   // workers internal thread id array
     unsigned int workerID[NUMWORKERS];      // workers application defined thread id array
     int *status_p;                          // pointer to execution status
-    int i, j;                               // aux variables for local loops
+    int i;                                  // aux variable for local loops
     double t0, t1;                          // time limits
 
-    // Initialize thread IDs
+    // Initialization of thread IDs
     for (i = 0; i < NUMWORKERS; i++) {
         workerID[i] = i;
     }
     srandom ((unsigned int) getpid ());
     t0 = ((double) clock ()) / CLOCKS_PER_SEC;
+
+    // Retrieval of filenames
+    char *files[argc-1];
+    for(i = 1; i < argc; i++) {
+        files[i-1] = argv[i];
+    }
+    presentFilenames(argc-1,files);
 
     // Generation of worker threads
     for (i = 0; i < NUMWORKERS; i++) {
@@ -60,8 +78,9 @@ int main (int argc, char **argv) {
             exit (EXIT_FAILURE);
         }
     }
+    printf("Threads created.\n");
 
-    // Report printing after workers have completed their tasks
+    // Report post task completion (by workers)
     for (i = 0; i < NUMWORKERS; i++) { 
         if (pthread_join (workerThreadID[i], (void *) &status_p) != 0) {
             perror ("error on waiting for thread worker");
@@ -70,9 +89,38 @@ int main (int argc, char **argv) {
         printf ("thread worker, with id %u, has terminated: ", i);
         printf ("its status was %d\n", *status_p);
     }
+    printResults();
+
+    // Execution time calculation
     t1 = ((double) clock ()) / CLOCKS_PER_SEC;
     printf ("\nElapsed time = %.6f s\n", t1 - t0);
 
     exit (EXIT_SUCCESS);
-        
+
+}
+
+/**
+ *  \brief Function worker.
+ *
+ *  Its role is to simulate the life cycle of a worker.
+ *
+ *  \param par pointer to application defined worker identification
+ */
+
+static void *worker (void *par) {
+    unsigned int id = *((unsigned int *) par);    // worker id
+
+    // char *files[] = {"filename0", "file"};
+    // presentFilenames(2, files);
+
+    Chunk chunk = getTextChunk(id);
+    printf(chunk.textChunk);
+    // while(strcmp(chunk.textChunk, "") != 0) {
+    //     tmp++;
+    //     printf(tmp+"\n");
+    //     chunk = getTextChunk(id);
+    // }
+
+    statusWorker[id] = EXIT_SUCCESS;
+    pthread_exit (&statusWorker[id]);
 }

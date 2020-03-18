@@ -29,14 +29,14 @@
 #include <unistd.h>
 
 #include "chunk.h"
-#include "probConst.h"
+#include "wordCount.h"
 
 char delimiters[25][MAXCHARSIZE] = {
     " ", "-", "–", "—",  ".",  ",",  ":",  ";", "(", ")", "[", "]", "{",
     "}", "?", "!", "\n", "\t", "\r", "\"", "“", "”", "«", "»", "…"};
 
 /** \brief worker threads return status array */
-extern int statusWorker[N];
+extern int statusWorker[NUMWORKERS];
 
 /** \brief main thread return status value */
 extern int statusMain;
@@ -71,11 +71,11 @@ void initialization(void) {
     incrementFileIdx = false;
 
     pthread_cond_init(&filenamesPresented, NULL);
+    printf("Monitor initialized.\n");
 }
 
 Chunk getTextChunk(int workerId) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
-        0) /* enter monitor */
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
@@ -84,9 +84,8 @@ Chunk getTextChunk(int workerId) {
     }
     pthread_once(&init, initialization);
 
-    while (areFilenamesPresented) {
-        if ((statusWorker[workerId] =
-                 pthread_cond_wait(&filenamesPresented, &accessCR)) != 0) {
+    while (!areFilenamesPresented) {
+        if ((statusWorker[workerId] = pthread_cond_wait(&filenamesPresented, &accessCR)) != 0) {
             errno = statusWorker[workerId]; /* save error in errno */
             perror("error on waiting in fifoFull");
             statusWorker[workerId] = EXIT_FAILURE;
@@ -147,16 +146,19 @@ Chunk getTextChunk(int workerId) {
         return chunk;
     } else {
         chunk.fileId = currentFileIdx;
-        strcpy(chunk.textChunk, textBuffer);
+        printf(""+sizeof(chunk.textChunk));
+        //strcpy(chunk.textChunk, textBuffer);
     }
+
+    printf("here.\n");
+    return chunk;
 
     if (incrementFileIdx) {
         currentFileIdx++;
         incrementFileIdx = false;
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
-        0) /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
@@ -169,8 +171,7 @@ Chunk getTextChunk(int workerId) {
 
 void savePartialResults(int workerId, int fileId, int* wordCount,
                         int wordSizeSize, int* vowelCount, int vowelCountSize) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
-        0) /* enter monitor */
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) /* enter monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
@@ -194,8 +195,7 @@ void savePartialResults(int workerId, int fileId, int* wordCount,
         vowelCountResults[fileId][i] = vowelCount[i];
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
-        0) /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) /* exit monitor */
     {
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
@@ -240,6 +240,7 @@ void presentFilenames(int size, char** fileNames) {
         }
 
         areFilenamesPresented = true;
+        printf("Files presented.\n");
     }
 
     if ((statusMain = pthread_cond_signal(&filenamesPresented)) != 0) {

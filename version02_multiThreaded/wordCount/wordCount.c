@@ -125,7 +125,7 @@ static void *worker(void *par) {
     // Instantiate thread variables
     int id;                      // worker ID
     Chunk chunk;                 // current text chunk under processing
-    char stringBuffer[MAXSIZE];             // buffer containing the current word
+    //char stringBuffer[MAXSIZE];             // buffer containing the current word
     int stringSize;                         // number of characters in current word
     int numVowels;                          // number of vowels in current word
     char symbol;                            // current char under processing from the current chunk
@@ -161,22 +161,16 @@ static void *worker(void *par) {
     localMaxVocalCount = 0;
     numVowels = 0;
     stringSize = 0;
-    strcpy(stringBuffer, "");
+    //strcpy(stringBuffer, "");
     control = 0;
-
-    //printf("%d - %s \n", id, chunk.textChunk);
 
     // Process text chunk
     while (strcmp(chunk.textChunk, "") != 0) {
-        printf("%c ", chunk.textChunk[0]);
         for (h = 0; chunk.textChunk[h] != '\0'; h++) {
-            symbol = chunk.textChunk[h];  // printf("%c\n",symbol);
+            symbol = chunk.textChunk[h];
             strcpy(completeSymbol, "");
             increment = true;
             ones = 0;
-            // printf("%d ",1);
-            // statusWorker[id] = EXIT_SUCCESS;
-            // pthread_exit(&statusWorker[id]);
 
             // Verify the number of 1s in the most significant bits
             for (i = sizeof(symbol) * CHAR_BIT - 1; i >= 0; --i) {
@@ -186,7 +180,6 @@ static void *worker(void *par) {
                 }
                 ones++;
             }
-            // printf("%d ",2);
 
             // Build the complete character (if it consists of more than 1 byte)
             strncat(completeSymbol, &symbol, 1);
@@ -195,7 +188,6 @@ static void *worker(void *par) {
                 nchar = chunk.textChunk[h];
                 strncat(completeSymbol, &nchar, 1);
             }
-            // printf("%d ",3);
 
             // Check if character is a delimiter
             for (i = 0; i < sizeof(delimeters) / sizeof(delimeters[0]); i++) {
@@ -205,22 +197,19 @@ static void *worker(void *par) {
                         wordCount[stringSize]++;
                         vowelsCount[numVowels][stringSize]++;
                         // totalNumberOfWords++;
-                        //printf("%s \n", stringBuffer);
-                        strcpy(stringBuffer, "");
+                        //strcpy(stringBuffer, "");
                         numVowels = 0;
                         stringSize = 0;
                     }
                     break;
                 }
             }
-            // printf("%d \n",4);
 
             // Skip remaining steps if current character is a delimiter
             if (control == 1) {
                 control = 0;
                 continue;
             }
-            // printf("%d ",5);
 
             // Increment word size and add character to current word (if applicable)
             for (i = 0; i < sizeof(mergers) / sizeof(mergers[0]); i++) {
@@ -234,9 +223,8 @@ static void *worker(void *par) {
                 if (stringSize > localMaxWordSize) {
                     localMaxWordSize = stringSize;
                 }
-                strcat(stringBuffer, completeSymbol);
+                //strcat(stringBuffer, completeSymbol);
             }
-            // printf("%d ",6);
 
             // Increment number of vowels (if applicable)
             for (i = 0; i < sizeof(vowels) / sizeof(vowels[0]); i++) {
@@ -248,7 +236,6 @@ static void *worker(void *par) {
                     break;
                 }
             }
-            // printf("%d \n",7);
         }
 
         // Consider last word of file
@@ -259,7 +246,7 @@ static void *worker(void *par) {
                 localMaxWordSize = stringSize;
             }
             //totalNumberOfWords++;
-            strcpy(stringBuffer, "");
+            //strcpy(stringBuffer, "");
             numVowels = 0;
             stringSize = 0;
         }

@@ -50,7 +50,7 @@ pthread_once_t init = PTHREAD_ONCE_INIT;
 
 pthread_cond_t filenamesPresented;
 
-char textBuffer[BUFFERSIZE];
+char* textBuffer;
 char tmpWord[MAXSIZE];
 FILE** files;
 char** filenames;
@@ -65,9 +65,9 @@ char symbol;
 char completeSymbol[MAXCHARSIZE];  // buffer for complex character construction
 int ones;
 bool incrementFileIdx;
+struct Chunk* chunk;
 
 void initialization(void) {
-    strcpy(textBuffer, "");
     strcpy(tmpWord, "");
     incrementFileIdx = false;
 
@@ -96,6 +96,7 @@ Chunk getTextChunk(int workerId) {
         }
     }
 
+    textBuffer = malloc(sizeof(char) * BUFFERSIZE);
     if (currentFileIdx < filesSize) {
         strcpy(textBuffer, tmpWord);
         strcpy(tmpWord, "");
@@ -121,7 +122,7 @@ Chunk getTextChunk(int workerId) {
                 ones++;
             }
 
-            // Build the complete character (if it consists of more than 1 byte)
+            // Build the complete character (if it consists of more than 1byte)
             strncat(completeSymbol, &symbol, 1);
             for (int i = 1; i < ones; i++) {
                 symbol = getc(files[currentFileIdx]);
@@ -141,15 +142,15 @@ Chunk getTextChunk(int workerId) {
                     }
                 }
             }
+
+            strcat(tmpWord, completeSymbol);
             if (leaveLoop) {
                 break;
             }
-
-            strcat(tmpWord, completeSymbol);
         }
     }
 
-    struct Chunk* chunk = malloc(sizeof(struct Chunk));
+    chunk = malloc(sizeof(struct Chunk));
     if (strlen(textBuffer) != 0) {
         chunk->fileId = currentFileIdx;
         chunk->textChunk = strdup(textBuffer);
@@ -241,7 +242,7 @@ void presentFilenames(int size, char** fileNames) {
             minimumSizeWordResults[i] = MAXSIZE;
             numberWordsResults[i] = 0;
             wordSizeResults[i] = malloc(sizeof(int) * (MAXSIZE));
-            vowelCountResults[i] = malloc(sizeof(int) * (MAXSIZE));
+            vowelCountResults[i] = malloc(sizeof(int*) * (MAXSIZE));
             for (int j = 0; j < MAXSIZE; j++) {
                 wordSizeResults[i][j] = 0;
                 vowelCountResults[i][j] = malloc(sizeof(int) * (MAXSIZE));

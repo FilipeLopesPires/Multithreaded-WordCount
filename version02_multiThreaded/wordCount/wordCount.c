@@ -134,8 +134,9 @@ static void *worker(void *par) {
                                        // construction
     int wordCount[MAXSIZE];  // array containing the number of words found whose
                              // size is equal to the respective index
-    // int vowelsCount[MAXSIZE][MAXSIZE];      // 2D array containing the number
-    // of words found whose number of vowels and word size are equal to x and y
+    // int vowelsCount[MAXSIZE][MAXSIZE];  // 2D array containing the number of
+    //                                     // words found whose number of vowels
+    //                                     // and word size are equal to x an y
     int **vowelsCount;  // 2D array containing the number of words found whose
                         // number of vowels and word size are equal to x and y
     int localMaxWordSize;    // largest word found in the text chunk
@@ -156,7 +157,7 @@ static void *worker(void *par) {
     chunk = getTextChunk(id);
     for (i = 0; i < MAXSIZE; i++) {
         wordCount[i] = 0;
-        // for (j=0; j<MAXSIZE; j++) {
+        // for (j = 0; j < MAXSIZE; j++) {
         //     vowelsCount[i][j] = 0;
         // }
     }
@@ -257,7 +258,8 @@ static void *worker(void *par) {
             }
             // printf("%d \n",7);
         }
-        printf("All Good! \n");
+
+        // printf("All Good! \n");
 
         savePartialResults(id, chunk.fileId, wordCount, localMaxWordSize,
                            vowelsCount, localMaxWordSize, localMaxVocalCount);

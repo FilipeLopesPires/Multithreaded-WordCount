@@ -1,8 +1,9 @@
 /**
  *  \file wordCount.h (interface file)
  *
- *  \brief Program that reads in succession several text files and prints a listing of the occurring 
- *  frequency of word lengths and the number of vowels in each word for each of the supplied texts.
+ *  \brief Program that reads in succession several text files and prints a
+ * listing of the occurring frequency of word lengths and the number of vowels
+ * in each word for each of the supplied texts.
  *
  *  Problem simulation parameters.
  *
@@ -15,16 +16,16 @@
 /* Generic parameters */
 
 /** \brief number of worker threads */
-#define NUMWORKERS      1
+#define NUMWORKERS 2
 
 /** \brief maximum size possible for a word */
-#define MAXSIZE         50
+#define MAXSIZE 50
 
 /** \brief maximum size (number of bytes) possible for a character */
-#define MAXCHARSIZE     6
+#define MAXCHARSIZE 6
 
-/** \brief memory space (number of bytes) available for words under processing */
-#define BUFFERSIZE      1000
+/** \brief memory space (number of bytes) available for words under processing
+ */
+#define BUFFERSIZE 1000
 
 #endif /* WORDCOUNT_H */
-

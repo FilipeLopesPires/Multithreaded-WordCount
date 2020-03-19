@@ -50,7 +50,7 @@ pthread_once_t init = PTHREAD_ONCE_INIT;
 
 pthread_cond_t filenamesPresented;
 
-char textBuffer[BUFFERSIZE];
+char* textBuffer;
 char tmpWord[MAXSIZE];
 FILE** files;
 char** filenames;
@@ -68,7 +68,6 @@ bool incrementFileIdx;
 struct Chunk* chunk;
 
 void initialization(void) {
-    strcpy(textBuffer, "");
     strcpy(tmpWord, "");
     incrementFileIdx = false;
     chunk = malloc(sizeof(struct Chunk));
@@ -95,6 +94,7 @@ Chunk getTextChunk(int workerId) {
         }
     }
 
+    textBuffer = malloc(sizeof(char) * BUFFERSIZE);
     if (currentFileIdx < filesSize) {
         strcpy(textBuffer, tmpWord);
         strcpy(tmpWord, "");
@@ -122,7 +122,7 @@ Chunk getTextChunk(int workerId) {
                 ones++;
             }
 
-            // Build the complete character (if it consists of more than 1 byte)
+            // Build the complete character (if it consists of more than 1byte)
             strncat(completeSymbol, &symbol, 1);
             for (int i = 1; i < ones; i++) {
                 symbol = getc(files[currentFileIdx]);
@@ -141,11 +141,11 @@ Chunk getTextChunk(int workerId) {
                     }
                 }
             }
+
+            strcat(tmpWord, completeSymbol);
             if (leaveLoop) {
                 break;
             }
-
-            strcat(tmpWord, completeSymbol);
         }
     }
 
@@ -185,6 +185,18 @@ void savePartialResults(int workerId, int fileId, int* wordSize,
         pthread_exit(&statusWorker[workerId]);
     }
     pthread_once(&init, initialization);
+
+    // for (int i = 0; i < wordSizeSize; i++) {
+    //     printf("%d ", wordSize[i]);
+    // }
+    // printf("\n\n");
+    // for (int i = 0; i < vowelCountSizeX; i++) {
+    //     for (int j = 0; j < vowelCountSizeY; j++) {
+    //         printf("%d ", vowelCount[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+    // printf("\n\n");
 
     for (int i = 0; i < wordSizeSize; i++) {
         wordSizeResults[fileId][i] += wordSize[i];

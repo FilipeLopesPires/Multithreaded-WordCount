@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
         printf("thread worker, with id %u, has terminated: ", i);
         printf("its status was %d\n", *status_p);
     }
-    //printResults();
+    printResults();
 
     // Execution time calculation
     t1 = ((double)clock()) / CLOCKS_PER_SEC;
@@ -125,7 +125,7 @@ static void *worker(void *par) {
     // Instantiate thread variables
     int id;                      // worker ID
     Chunk chunk;                 // current text chunk under processing
-    //char stringBuffer[MAXSIZE];             // buffer containing the current word
+    char stringBuffer[MAXSIZE];             // buffer containing the current word
     int stringSize;                         // number of characters in current word
     int numVowels;                          // number of vowels in current word
     char symbol;                            // current char under processing from the current chunk
@@ -146,7 +146,7 @@ static void *worker(void *par) {
     chunk = getTextChunk(id);
     for (i = 0; i < MAXSIZE; i++) {
         wordCount[i] = 0;
-        // for (j=0; j<MAXSIZE; j++) {
+        // for (j = 0; j < MAXSIZE; j++) {
         //     vowelsCount[i][j] = 0;
         // }
     }
@@ -161,10 +161,10 @@ static void *worker(void *par) {
     localMaxVocalCount = 0;
     numVowels = 0;
     stringSize = 0;
-    //strcpy(stringBuffer, "");
+    strcpy(stringBuffer, "");
     control = 0;
 
-    printf("%d - %s \n", id, chunk.textChunk);
+    //printf("%d - %s \n", id, chunk.textChunk);
 
     // Process text chunk
     while (strcmp(chunk.textChunk, "") != 0) {
@@ -205,7 +205,8 @@ static void *worker(void *par) {
                         wordCount[stringSize]++;
                         vowelsCount[numVowels][stringSize]++;
                         // totalNumberOfWords++;
-                        //strcpy(stringBuffer, "");
+                        //printf("%s \n", stringBuffer);
+                        strcpy(stringBuffer, "");
                         numVowels = 0;
                         stringSize = 0;
                     }
@@ -233,7 +234,7 @@ static void *worker(void *par) {
                 if (stringSize > localMaxWordSize) {
                     localMaxWordSize = stringSize;
                 }
-                //strcat(stringBuffer, completeSymbol);
+                strcat(stringBuffer, completeSymbol);
             }
             // printf("%d ",6);
 
@@ -249,21 +250,38 @@ static void *worker(void *par) {
             }
             // printf("%d \n",7);
         }
-        printf("%d - All Good! \n",id);
 
-        // for (i = 0; i < MAXSIZE; i++) {
+        // Consider last word of file
+        if (stringSize > 0) {
+            wordCount[stringSize]++;
+            vowelsCount[numVowels][stringSize]++;
+            if (stringSize > localMaxWordSize) {
+                localMaxWordSize = stringSize;
+            }
+            //totalNumberOfWords++;
+            strcpy(stringBuffer, "");
+            numVowels = 0;
+            stringSize = 0;
+        }
+
+
+        // printf("%d - All Good! \n",id);
+
+        // for (i = 0; i < localMaxWordSize+1; i++) {
         //     printf("%d ", wordCount[i]);
         // }
         // printf("\n\n");
-        // for (i = 0; i < MAXSIZE; i++) {
-        //     for (j = 0; j < MAXSIZE; j++) {
+
+        // for (i = 0; i < localMaxVocalCount+1; i++) {
+        //     for (j = 0; j < localMaxWordSize+1; j++) {
         //         printf("%d ", vowelsCount[i][j]);
         //     }
         //     printf("\n");
         // }
         // printf("\n\n");
-        savePartialResults(id, chunk.fileId, wordCount, localMaxWordSize,
-                           vowelsCount, localMaxWordSize, localMaxVocalCount);
+
+        savePartialResults(id, chunk.fileId, wordCount, localMaxWordSize+1,
+                           vowelsCount, localMaxVocalCount+1, localMaxWordSize+1);
 
         chunk = getTextChunk(id);
     }

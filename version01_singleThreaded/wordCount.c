@@ -136,7 +136,8 @@ int main(int argc, char **argv) {
             if (strlen(stringBuffer) > 0) {
                 control = 1;
                 wordCount[stringSize]++;
-                vowelsCount[stringSize][numVowels] += numVowels;
+                //vowelsCount[stringSize][numVowels] += numVowels;
+                vowelsCount[numVowels][stringSize]++;
                 if (stringSize > largestWordSize) {
                     largestWordSize = stringSize;
                 }

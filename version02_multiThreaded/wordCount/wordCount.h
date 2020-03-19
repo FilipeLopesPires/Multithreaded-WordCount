@@ -23,7 +23,7 @@
 /** \brief maximum size (number of bytes) possible for a character */
 #define MAXCHARSIZE     6
 
-/** \brief memory space (number of bytes) available for words under processing */
+/** \brief memory space (number of bytes) available for words under processing. Must be greater or equal to MAXSIZE*MAXCHARSIZE */
 #define BUFFERSIZE      1000
 
 #endif /* WORDCOUNT_H */

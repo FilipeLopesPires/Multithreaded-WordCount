@@ -31,5 +31,6 @@ extern void savePartialResults(int workerId, int fileId, int* wordSize,
                                int vowelCountSizeX, int vowelCountSizeY);
 extern void presentFilenames(int size, char** filenames);
 extern void printResults();
+extern void destroy();
 
 #endif /* TEXTPROC_H */

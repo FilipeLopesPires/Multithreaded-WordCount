@@ -16,15 +16,16 @@
 /* Generic parameters */
 
 /** \brief number of worker threads */
-#define NUMWORKERS      10
+#define NUMWORKERS 5
 
 /** \brief maximum size possible for a word */
-#define MAXSIZE         50
+#define MAXSIZE 50
 
 /** \brief maximum size (number of bytes) possible for a character */
-#define MAXCHARSIZE     6
+#define MAXCHARSIZE 6
 
-/** \brief memory space (number of bytes) available for words under processing. Must be greater or equal to MAXSIZE*MAXCHARSIZE */
-#define BUFFERSIZE      1000
+/** \brief memory space (number of bytes) available for words under processing.
+ * Must be greater or equal to MAXSIZE*MAXCHARSIZE */
+#define BUFFERSIZE 1000
 
 #endif /* WORDCOUNT_H */

@@ -65,19 +65,20 @@ char symbol;
 char completeSymbol[MAXCHARSIZE];  // buffer for complex character construction
 int ones;
 bool incrementFileIdx;
-struct Chunk* chunk;
+struct Chunk chunk;
 
 void initialization(void) {
     strcpy(tmpWord, "");
     incrementFileIdx = false;
-    chunk = malloc(sizeof(struct Chunk));
+    // chunk = malloc(sizeof(struct Chunk));
 
     pthread_cond_init(&filenamesPresented, NULL);
     printf("Monitor initialized.\n");
 }
 
-Chunk getTextChunk(int workerId) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) { /* enter monitor */
+struct Chunk getTextChunk(int workerId) {
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
+        0) {                            /* enter monitor */
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
         statusWorker[workerId] = EXIT_FAILURE;
@@ -86,7 +87,8 @@ Chunk getTextChunk(int workerId) {
     pthread_once(&init, initialization);
 
     while (!areFilenamesPresented) {
-        if ((statusWorker[workerId] = pthread_cond_wait(&filenamesPresented, &accessCR)) != 0) {
+        if ((statusWorker[workerId] =
+                 pthread_cond_wait(&filenamesPresented, &accessCR)) != 0) {
             errno = statusWorker[workerId]; /* save error in errno */
             perror("error on waiting in fifoFull");
             statusWorker[workerId] = EXIT_FAILURE;
@@ -95,15 +97,15 @@ Chunk getTextChunk(int workerId) {
     }
 
     textBuffer = malloc(sizeof(char) * BUFFERSIZE);
+    strcpy(textBuffer, tmpWord);
+    strcpy(tmpWord, "");
     if (currentFileIdx < filesSize) {
-        strcpy(textBuffer, tmpWord);
-        strcpy(tmpWord, "");
-        while (strlen(textBuffer) <= BUFFERSIZE) {
+        while (strlen(textBuffer) < BUFFERSIZE) {
             symbol = getc(files[currentFileIdx]);
 
             // Verify if the current file has ended
             if (symbol == EOF) {
-                if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
+                if (strlen(tmpWord) + strlen(textBuffer) < BUFFERSIZE) {
                     strcat(textBuffer, tmpWord);
                     strcpy(tmpWord, "");
                 }
@@ -131,9 +133,10 @@ Chunk getTextChunk(int workerId) {
 
             // Check if character is a delimiter
             bool leaveLoop = false;
-            for (int i = 0; i < sizeof(delimiters) / sizeof(delimiters[0]); i++) {
+            for (int i = 0; i < sizeof(delimiters) / sizeof(delimiters[0]);
+                 i++) {
                 if (strcmp(completeSymbol, delimiters[i]) == 0) {
-                    if (strlen(tmpWord) + strlen(textBuffer) <= BUFFERSIZE) {
+                    if (strlen(tmpWord) + strlen(textBuffer) < BUFFERSIZE) {
                         strcat(textBuffer, tmpWord);
                         strcpy(tmpWord, "");
                     } else {
@@ -149,36 +152,33 @@ Chunk getTextChunk(int workerId) {
         }
     }
 
-    //struct Chunk* chunk = malloc(sizeof(struct Chunk));
-    chunk = malloc(sizeof(struct Chunk));
-    if (strlen(textBuffer) != 0) {
-        chunk->fileId = currentFileIdx;
-        chunk->textChunk = strdup(textBuffer);
-    } else {
-        chunk->fileId = -1;
-        chunk->textChunk = strdup("");
-    }
-    strcpy(textBuffer, "");
+    // struct Chunk* chunk = malloc(sizeof(struct Chunk));
+    // chunk = malloc(sizeof(struct Chunk));
+    chunk.fileId = currentFileIdx;
+    chunk.textChunk = strdup(textBuffer);
+    free(textBuffer);
 
     if (incrementFileIdx) {
         currentFileIdx++;
         incrementFileIdx = false;
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) { /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
+        0) {                            /* exit monitor */
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
         statusWorker[workerId] = EXIT_FAILURE;
         pthread_exit(&statusWorker[workerId]);
     }
 
-    return *chunk;
+    return chunk;
 }
 
 void savePartialResults(int workerId, int fileId, int* wordSize,
                         int wordSizeSize, int** vowelCount, int vowelCountSizeX,
                         int vowelCountSizeY) {
-    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) { /* enter monitor */
+    if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) !=
+        0) {                            /* enter monitor */
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on entering monitor(CF)");
         statusWorker[workerId] = EXIT_FAILURE;
@@ -211,11 +211,12 @@ void savePartialResults(int workerId, int fileId, int* wordSize,
 
     for (int i = 0; i < vowelCountSizeX; i++) {
         for (int j = 0; j < vowelCountSizeY; j++) {
-            vowelCountResults[fileId][i][j] = vowelCount[i][j];
+            vowelCountResults[fileId][i][j] += vowelCount[i][j];
         }
     }
 
-    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) { /* exit monitor */
+    if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) !=
+        0) {                            /* exit monitor */
         errno = statusWorker[workerId]; /* save error in errno */
         perror("error on exiting monitor(CF)");
         statusWorker[workerId] = EXIT_FAILURE;
@@ -269,7 +270,8 @@ void presentFilenames(int size, char** fileNames) {
         }
     }
 
-    if ((statusMain = pthread_mutex_unlock(&accessCR)) != 0) { /* exit monitor */
+    if ((statusMain = pthread_mutex_unlock(&accessCR)) !=
+        0) {                /* exit monitor */
         errno = statusMain; /* save error in errno */
         perror("error on exiting monitor(CF)");
         statusMain = EXIT_FAILURE;
@@ -332,7 +334,8 @@ void printResults() {
         printf("\n\n");
     }
 
-    if ((statusMain = pthread_mutex_unlock(&accessCR)) != 0) { /* exit monitor */
+    if ((statusMain = pthread_mutex_unlock(&accessCR)) !=
+        0) {                /* exit monitor */
         errno = statusMain; /* save error in errno */
         perror("error on exiting monitor(CF)");
         statusMain = EXIT_FAILURE;

@@ -25,7 +25,7 @@
 
 #include "chunk.h"
 
-extern Chunk getTextChunk(int workerId);
+extern struct Chunk getTextChunk(int workerId);
 extern void savePartialResults(int workerId, int fileId, int* wordSize,
                                int wordSizeSize, int** vowelCount,
                                int vowelCountSizeX, int vowelCountSizeY);

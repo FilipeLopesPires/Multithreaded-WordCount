@@ -28,8 +28,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "chunk.h"
-#include "textProc.h"
+#include "controlInfo.h"
+#include "textProcV2.h"
 #include "wordCount.h"
 
 /** \brief worker life cycle routine */
@@ -88,7 +88,8 @@ int main(int argc, char **argv) {
 
     // Generation of worker threads
     for (i = 0; i < NUMWORKERS; i++) {
-        if (pthread_create(&workerThreadID[i], NULL, worker, &workerID[i]) != 0) {
+        if (pthread_create(&workerThreadID[i], NULL, worker, &workerID[i]) !=
+            0) {
             perror("Error on creating thread worker.\n");
             exit(EXIT_FAILURE);
         }
@@ -124,58 +125,60 @@ int main(int argc, char **argv) {
 
 static void *worker(void *par) {
     // Instantiate thread variables
-    int id;                                 // worker ID
-    struct Chunk chunk;                     // current text chunk under processing
-    //char stringBuffer[MAXSIZE];             // buffer containing the current word
-    int stringSize;                         // number of characters in current word
-    int numVowels;                          // number of vowels in current word
-    char symbol;                            // current char under processing from the current chunk
-    char completeSymbol[MAXCHARSIZE];       // buffer for complex character construction
-    int wordCount[MAXSIZE];                 // array containing the number of words found whose size is equal to the respective index
-    // int vowelsCount[MAXSIZE][MAXSIZE];      // 2D array containing the number of words found whose number of vowels and word size are equal to x and y
-    int **vowelsCount;                      // 2D array containing the number of words found whose number of vowels and word size are equal to x and y
-    int localMaxWordSize;                   // largest word found in the text chunk
-    int localMaxVocalCount;                 // largest number of vowels found in a word from the text chunk
-    int ones;           // aux variable to count the number of ones in the most significant bits of the current character
-    char nchar;         // aux variable to construct the complete symbol (used for those who use more than 1 byte)
-    int control;        // aux variable to determine whether the program should update 'numVowels' and 'stringSize' or not
-    bool increment;     // aux variable to determine whether the program should update 'stringSize' and 'stringBuffer' or not
-    int h, i, j;        // aux variables for local loops
+    int id;  // worker ID
+    // char stringBuffer[MAXSIZE];             // buffer containing the current
+    // word
+    int stringSize;  // number of characters in current word
+    int numVowels;   // number of vowels in current word
+    char symbol;     // current char under processing from the current chunk
+    char completeSymbol[MAXCHARSIZE];  // buffer for complex character
+                                       // construction
+    // int wordCount[MAXSIZE];  // array containing the number of words found
+    // whose
+    //                          // size is equal to the respective index
+    // // int vowelsCount[MAXSIZE][MAXSIZE];      // 2D array containing the
+    // number
+    // // of words found whose number of vowels and word size are equal to x and
+    // y int **vowelsCount;  // 2D array containing the number of words found
+    // whose number of vowels and word size are equal to x and y
+    // int localMaxWordSize;    // largest word found in the text chunk
+    // int localMaxVocalCount;  // largest number of vowels found in a word from
+    // the text chunk
+    int ones;     // aux variable to count the number of ones in the most
+                  // significant bits of the current character
+    char nchar;   // aux variable to construct the complete symbol (used for
+                  // those who use more than 1 byte)
+    int control;  // aux variable to determine whether the program should update
+                  // 'numVowels' and 'stringSize' or not
+    bool increment;  // aux variable to determine whether the program should
+                     // update 'stringSize' and 'stringBuffer' or not
+    int h, i, j;     // aux variables for local loops
 
     // Initialize thread variables
     id = *((int *)par);
-    chunk = getTextChunk(id);
+    struct controlInfo controlInfo;
     for (i = 0; i < MAXSIZE; i++) {
-        wordCount[i] = 0;
+        controlInfo.wordSize[i] = 0;
     }
-    //vowelsCount = malloc(sizeof(int *) * (MAXSIZE));
-    if((vowelsCount = malloc(sizeof(int *) * (MAXSIZE))) == NULL) {
-        perror("Error while allocating memory for worker thread.\n");
-        statusWorker[id] = EXIT_FAILURE;
-        pthread_exit(&statusWorker[id]);
-    }
+
     for (i = 0; i < MAXSIZE; i++) {
-        //vowelsCount[i] = malloc(sizeof(int) * (MAXSIZE));
-        if((vowelsCount[i] = malloc(sizeof(int) * (MAXSIZE))) == NULL) {
-            perror("Error while allocating memory for worker thread.\n");
-            statusWorker[id] = EXIT_FAILURE;
-            pthread_exit(&statusWorker[id]);
-        }
         for (j = 0; j < MAXSIZE; j++) {
-            vowelsCount[i][j] = 0;
+            controlInfo.vowelCount[i][j] = 0;
         }
     }
-    localMaxWordSize = 0;
-    localMaxVocalCount = 0;
+    controlInfo.maxWordSize = 0;
+    controlInfo.maxVowelCount = 0;
     numVowels = 0;
     stringSize = 0;
-    //strcpy(stringBuffer, "");
+    // strcpy(stringBuffer, "");
     control = 0;
 
     // Process text chunk
-    while (strcmp(chunk.textChunk, "") != 0) {
-        for (h = 0; h < strlen(chunk.textChunk); h++) {
-            symbol = chunk.textChunk[h];
+    char textChunk[BUFFERSIZE] = "";
+
+    while (getTextChunk(id, textChunk, controlInfo)) {
+        for (h = 0; h < strlen(textChunk); h++) {
+            symbol = textChunk[h];
             strcpy(completeSymbol, "");
             increment = true;
             ones = 0;
@@ -193,7 +196,7 @@ static void *worker(void *par) {
             strncat(completeSymbol, &symbol, 1);
             for (i = 1; i < ones; i++) {
                 h++;
-                nchar = chunk.textChunk[h];
+                nchar = textChunk[h];
                 strncat(completeSymbol, &nchar, 1);
             }
 
@@ -202,10 +205,10 @@ static void *worker(void *par) {
                 if (strcmp(completeSymbol, delimeters[i]) == 0) {
                     control = 1;
                     if (stringSize > 0) {
-                        wordCount[stringSize]++;
-                        vowelsCount[numVowels][stringSize]++;
+                        controlInfo.wordSize[stringSize]++;
+                        controlInfo.vowelCount[numVowels][stringSize]++;
                         // totalNumberOfWords++;
-                        //strcpy(stringBuffer, "");
+                        // strcpy(stringBuffer, "");
                         numVowels = 0;
                         stringSize = 0;
                     }
@@ -229,18 +232,18 @@ static void *worker(void *par) {
             }
             if (increment) {
                 stringSize++;
-                if (stringSize > localMaxWordSize) {
-                    localMaxWordSize = stringSize;
+                if (stringSize > controlInfo.maxWordSize) {
+                    controlInfo.maxWordSize = stringSize;
                 }
-                //strcat(stringBuffer, completeSymbol);
+                // strcat(stringBuffer, completeSymbol);
             }
 
             // Increment number of vowels (if applicable)
             for (i = 0; i < sizeof(vowels) / sizeof(vowels[0]); i++) {
                 if (strcmp(completeSymbol, vowels[i]) == 0) {
                     numVowels++;
-                    if (numVowels > localMaxVocalCount) {
-                        localMaxVocalCount = numVowels;
+                    if (numVowels > controlInfo.maxVowelCount) {
+                        controlInfo.maxVowelCount = numVowels;
                     }
                     break;
                 }
@@ -248,43 +251,42 @@ static void *worker(void *par) {
         }
         // Consider last word of file
         if (stringSize > 0) {
-            wordCount[stringSize]++;
-            vowelsCount[numVowels][stringSize]++;
-            if (stringSize > localMaxWordSize) {
-                localMaxWordSize = stringSize;
+            controlInfo.wordSize[stringSize]++;
+            controlInfo.vowelCount[numVowels][stringSize]++;
+            if (stringSize > controlInfo.maxWordSize) {
+                controlInfo.maxWordSize = stringSize;
             }
             // totalNumberOfWords++;
-            //strcpy(stringBuffer, "");
+            // strcpy(stringBuffer, "");
             numVowels = 0;
             stringSize = 0;
         }
 
+        controlInfo.maxWordSize = controlInfo.maxWordSize + 1;
+        controlInfo.maxVowelCount = controlInfo.maxVowelCount + 1;
+
         // Save chunk processing results
-        savePartialResults(id, chunk.fileId, wordCount, localMaxWordSize + 1,
-                           vowelsCount, localMaxVocalCount + 1,
-                           localMaxWordSize + 1);
+        savePartialResults(id, controlInfo);
 
         // Reset thread variables
         for (i = 0; i < MAXSIZE; i++) {
-            wordCount[i] = 0;
+            controlInfo.wordSize[i] = 0;
         }
         for (i = 0; i < MAXSIZE; i++) {
             for (j = 0; j < MAXSIZE; j++) {
-                vowelsCount[i][j] = 0;
+                controlInfo.vowelCount[i][j] = 0;
             }
         }
-        localMaxWordSize = 0;
-        localMaxVocalCount = 0;
-
-        // Retrieve next chunk
-        chunk = getTextChunk(id);
+        controlInfo.maxWordSize = 0;
+        controlInfo.maxVowelCount = 0;
+        strcpy(textChunk, "");
     }
 
     // Free used memory
-    for (i = 0; i < MAXSIZE; i++) {
-        free(vowelsCount[i]);
-    }
-    free(vowelsCount);
+    // for (i = 0; i < MAXSIZE; i++) {
+    //     free(vowelsCount[i]);
+    // }
+    // free(vowelsCount);
 
     statusWorker[id] = EXIT_SUCCESS;
     pthread_exit(&statusWorker[id]);

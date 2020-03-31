@@ -68,17 +68,9 @@ int main(int argc, char **argv) {
             }
         }
 
-        // Allocate memory for results
-        // if ((results = malloc(nElem * sizeof(double))) == NULL) {
-        //     // malloc error message
-        //     printf("Error while allocating memory for results!");
-        //     exit(1);
-        // }
-
         // Calculate cross correlation
         int mod;
         int numErrors = 0;
-
         if (compareEnabled) {
             printf("Comparing one by one:\n");
         }
@@ -103,7 +95,7 @@ int main(int argc, char **argv) {
         }
 
         if (compareEnabled) {
-            printf("Num. Errors Found: %d\n", numErrors);
+            printf("\nNum. Errors Found: %d\n", numErrors);
         }
 
         fclose(file);

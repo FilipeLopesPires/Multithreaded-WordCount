@@ -1,78 +1,125 @@
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
+/**
+ *  \file wordCount.c (implementation file)
+ *
+ *  \brief Program that reads in succession several text files and prints a
+ *  listing of the occurring frequency of word lengths and the number of vowels
+ *  in each word for each of the supplied texts.
+ *
+ *  Synchronization based on monitors.
+ *  Both threads and the monitor are implemented using the pthread library which
+ *  enables the creation of a monitor of the Lampson / Redell type.
+ *
+ *  Generator thread of the intervening entities.
+ *
+ *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
+ */
+
+#include "signalCrossCorrelation.h"
+
+#include <dirent.h>
+#include <limits.h>
 #include <math.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "results.h"
+#include "signal.h"
+#include "signalProc.h"
+
+/** \brief worker life cycle routine */
+static void *worker(void *id);
+
+/** \brief worker threads return status array */
+int statusWorker[NUMWORKERS];
+
+/** \brief main thread return status value */
+int statusMain;
 
 int main(int argc, char **argv) {
-
-    // Validate program arguments
+    // Validate number of arguments passed to the program
     if (argc <= 1) {
         printf("The program need at least one text file to parse!\n");
         exit(1);
     }
 
     // Declare useful variables
-    FILE *file;
-    int nElem;          // number of elements, given by the first 4 bytes of the processed file
-    double *sig[3];     // array containing the values of the signals present in the file
-    double curSig;      // auxiliar variable containing the current signal under analysis
-    double *results;    // array containing the results of the similarity evaluation
+    pthread_t workerThreadID[NUMWORKERS];  // workers internal thread id array
+    unsigned int
+        workerID[NUMWORKERS];  // workers application defined thread id array
+    int *status_p;             // pointer to execution status
+    int i;                     // aux variable for local loops
+    double t0, t1;             // time limits
 
-    for (int fileIndex=1; fileIndex<argc; fileIndex++) {
-        // Read file
-        file = fopen(argv[fileIndex], "r");
-        if (file == NULL) {
-            // end of file error
-            printf("Error while opening file!");
-            exit(1);
-        } 
+    // Initialization of thread IDs
+    for (i = 0; i < NUMWORKERS; i++) {
+        workerID[i] = i;
+    }
+    srandom((unsigned int)getpid());
+    t0 = ((double)clock()) / CLOCKS_PER_SEC;
 
-        // Get number of elements
-        fread(&nElem, 4, 1, file);
-        printf("%d\n",nElem);
-
-        // Process remainder of file (actual signals)
-        for(int n=0; n<3; n++) {
-            if((sig[n]=malloc(nElem*sizeof(double)))==NULL) {
-                // malloc error message
-                printf("Error while allocating memory for signal!");
-                exit(1);
-            }
-            for(int i=0; i<nElem; i++) {
-                //if(reaches EOF) {
-                //    // file format error message
-                //    ...
-                //}
-                fread(&curSig, 8, 1, file);
-                sig[n][i] = curSig;
-            }
-        }
-
-        // Allocate memory for results
-        if((results=malloc(nElem*sizeof(double)))==NULL) {
-            // malloc error message
-            printf("Error while allocating memory for results!");
-            exit(1);
-        }
-
-        // Calculate cross correlation 
-        int mod;
-        for(int t=0; t<nElem; t++) {
-            double curSum = 0.0;
-            for(int n=0; n<nElem; n++) {
-                mod = (t+n) % nElem;
-                curSum += sig[0][n]*sig[1][mod];
-            }
-            results[t] = curSum;
-            if(results[t]==sig[2][t]) {
-                printf("1");
-            } else {
-                printf("0");
-            }
-        }
-        
-        printf("\n");
-        fclose(file);
+    // Retrieval of filenames
+    char *files[argc - 1];
+    for (i = 1; i < argc; i++) {
+        files[i - 1] = argv[i];
     }
 
+    presentFilenames(argc - 1, files);
+
+    // Generation of worker threads
+    for (i = 0; i < NUMWORKERS; i++) {
+        if (pthread_create(&workerThreadID[i], NULL, worker, &workerID[i]) !=
+            0) {
+            perror("Error on creating thread worker.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    printf("Threads created.\n");
+
+    // Report post task completion (by workers)
+    for (i = 0; i < NUMWORKERS; i++) {
+        if (pthread_join(workerThreadID[i], (void *)&status_p) != 0) {
+            perror("Error on waiting for thread worker.\n");
+            exit(EXIT_FAILURE);
+        }
+        printf("thread worker, with id %u, has terminated: ", i);
+        printf("its status was %d\n", *status_p);
+    }
+    printResults();
+    destroy();
+
+    // Execution time calculation
+    t1 = ((double)clock()) / CLOCKS_PER_SEC;
+    printf("\nElapsed time = %.6f s\n", t1 - t0);
+
+    exit(EXIT_SUCCESS);
+}
+
+/**
+ *  \brief Function worker.
+ *
+ *  Its role is to simulate the life cycle of a worker.
+ *
+ *  \param par pointer to application defined worker identification
+ */
+
+static void *worker(void *par) {
+    // Instantiate thread variables
+    int id;  // worker ID
+
+    // Initialize thread variables
+    id = *((int *)par);
+    struct signal signal;
+    struct results results;
+
+    while (getSignalAndTau(id, signal, results)) {
+    }
+
+    statusWorker[id] = EXIT_SUCCESS;
+    pthread_exit(&statusWorker[id]);
 }

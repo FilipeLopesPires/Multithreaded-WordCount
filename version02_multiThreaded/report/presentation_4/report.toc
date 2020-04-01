@@ -1,2 +1,0 @@
-\beamer@sectionintoc {1}{Word Count Problem}{2}{0}{1}
-\beamer@sectionintoc {2}{Cross Correlation Calculation Problem}{5}{0}{2}

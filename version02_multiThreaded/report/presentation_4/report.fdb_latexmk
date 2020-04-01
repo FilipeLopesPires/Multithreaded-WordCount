@@ -1,8 +1,8 @@
 # Fdb version 3
-["pdflatex"] 1585754903 "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.tex" "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.pdf" "report" 1585754905
+["pdflatex"] 1585754903 "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.tex" "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.pdf" "report" 1585755979
   "/etc/texmf/web2c/texmf.cnf" 1569490343 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.aux" 1585754905 2613 378b3b0b35436a5033200d5a60b26eb6 ""
-  "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.tex" 1585754900 2331 6d44f7654f03cbd61a6d72745f0ae471 ""
+  "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.tex" 1585755978 2331 6d44f7654f03cbd61a6d72745f0ae471 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/fira/fir_765q6w.enc" 1480098667 3350 40ce5d7e5471202532faedd5ad1c234f ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/fira/fir_7gpamp.enc" 1480098667 2976 c88b4d9984e79b9c72dba25be4c333fa ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1511824771 3332 103109f5612ad95229751940c61aada0 ""
@@ -204,14 +204,14 @@
   "report.aux" 1585754905 2613 378b3b0b35436a5033200d5a60b26eb6 ""
   "report.nav" 1585754905 1209 5e9eaa12f9cb70d83563aed24117a8ef ""
   "report.out" 1585754905 125 288d9fb591a09a106763e48559f84b14 ""
-  "report.tex" 1585754900 2331 6d44f7654f03cbd61a6d72745f0ae471 ""
+  "report.tex" 1585755978 2331 6d44f7654f03cbd61a6d72745f0ae471 ""
   (generated)
-  "report.snm"
-  "report.aux"
-  "report.toc"
   "report.nav"
+  "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.log"
   "report.out"
+  "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.pdf"
+  "report.toc"
   "report.log"
   "report.pdf"
-  "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.pdf"
-  "/home/joaoalegria/Desktop/CLE/cle_19-20/version02_multiThreaded/report/presentation_4/report.log"
+  "report.snm"
+  "report.aux"

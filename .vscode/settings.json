@@ -14,6 +14,14 @@
         "random": "c",
         "initializer_list": "c",
         "utility": "c",
-        "thread": "c"
+        "thread": "c",
+        "optional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "ratio": "c",
+        "system_error": "c",
+        "functional": "c",
+        "type_traits": "c",
+        "variant": "c"
     }
 }

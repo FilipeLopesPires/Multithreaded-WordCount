@@ -1,15 +1,15 @@
 /**
- *  \file wordCount.c (implementation file)
+ *  \file signalCrossCorrelation.c (implementation file)
  *
- *  \brief Program that reads in succession several text files and prints a
- *  listing of the occurring frequency of word lengths and the number of vowels
- *  in each word for each of the supplied texts.
+ *  \brief Multi-threaded implementation of the program that computes the
+ * circular cross-correlation of the values of two signals.
  *
- *  Synchronization based on monitors.
- *  Both threads and the monitor are implemented using the pthread library which
- *  enables the creation of a monitor of the Lampson / Redell type.
- *
- *  Generator thread of the intervening entities.
+ *  The program 'signalCrossCorrelation' reads in succession the values of pairs
+ * of signals stored in several data files whose names are provided, computes
+ * the circular cross-correlation of each pair and appends it to the
+ * corresponding file. In this implementation, threads synchronization is based
+ * on monitors. Both threads and the monitor are implemented using the pthread
+ * library which enables the creation of a monitor of the Lampson / Redell type.
  *
  *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
  */
@@ -17,6 +17,7 @@
 #include "signalCrossCorrelation.h"
 
 #include <dirent.h>
+#include <getopt.h>
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>
@@ -41,14 +42,40 @@ int statusWorker[NUMWORKERS];
 /** \brief main thread return status value */
 int statusMain;
 
+/**
+ *  \brief Main function called when the program is executed.
+ *
+ *  Main function of the 'signalCrossCorrelation' program responsible for
+ * creating worker threads and managing the monitor for delivering the desired
+ * results. The function receives the paths to the text files.
+ *
+ *  \param argc number of files passed to the program.
+ *  \param argv paths to the signal files.
+ *
+ */
 int main(int argc, char **argv) {
-    // Validate number of arguments passed to the program
-    if (argc <= 1) {
+    // Validate program arguments
+
+    int opt;
+    // int numberSignals = 2;
+    bool compareEnabled = false;
+
+    while ((opt = getopt(argc, argv, "c")) != -1) {
+        switch (opt) {
+            case 'c':
+                // numberSignals = 3;
+                compareEnabled = true;
+                break;
+        }
+    }
+
+    if ((argc - optind) < 1) {
         printf("The program need at least one text file to parse!\n");
         exit(1);
     }
 
     // Declare useful variables
+
     pthread_t workerThreadID[NUMWORKERS];  // workers internal thread id array
     unsigned int
         workerID[NUMWORKERS];  // workers application defined thread id array
@@ -57,6 +84,7 @@ int main(int argc, char **argv) {
     double t0, t1;             // time limits
 
     // Initialization of thread IDs
+
     for (i = 0; i < NUMWORKERS; i++) {
         workerID[i] = i;
     }
@@ -64,14 +92,15 @@ int main(int argc, char **argv) {
     t0 = ((double)clock()) / CLOCKS_PER_SEC;
 
     // Retrieval of filenames
+
     char *files[argc - 1];
     for (i = 1; i < argc; i++) {
         files[i - 1] = argv[i];
     }
-
     presentFilenames(argc - 1, files);
 
     // Generation of worker threads
+
     for (i = 0; i < NUMWORKERS; i++) {
         if (pthread_create(&workerThreadID[i], NULL, worker, &workerID[i]) !=
             0) {
@@ -82,6 +111,7 @@ int main(int argc, char **argv) {
     printf("Threads created.\n");
 
     // Report post task completion (by workers)
+
     for (i = 0; i < NUMWORKERS; i++) {
         if (pthread_join(workerThreadID[i], (void *)&status_p) != 0) {
             perror("Error on waiting for thread worker.\n");
@@ -90,10 +120,11 @@ int main(int argc, char **argv) {
         printf("thread worker, with id %u, has terminated: ", i);
         printf("its status was %d\n", *status_p);
     }
-    writeOrPrintResults(true);
+    writeOrPrintResults(compareEnabled);
     destroy();
 
     // Execution time calculation
+
     t1 = ((double)clock()) / CLOCKS_PER_SEC;
     printf("\nElapsed time = %.6f s\n", t1 - t0);
 
@@ -109,21 +140,28 @@ int main(int argc, char **argv) {
  */
 
 static void *worker(void *par) {
-    // Instantiate thread variables
-    int id;  // worker ID
+    // Instantiate and initialize thread variables
 
-    // Initialize thread variables
-    id = *((int *)par);
-    struct signal signal;
-    signal.tau = 0;
-    signal.values = NULL;
-    signal.signalSize = 0;
-    struct results results;
-    results.tau = 0;
-    results.value = 0;
-    results.fileId = 0;
+    int id = *((int *)par);  // worker ID
+    struct signal signal = {.signalSize = 0, .values = NULL, .tau = 0};
+    struct results results = {.fileId = 0, .tau = 0, .value = 0.0};
+    int mod;
+    double curSum;
+
+    // Calculate cross correlation
 
     while (getSignalAndTau(id, &signal, &results)) {
+        curSum = 0.0;
+
+        for (int n = 0; n < signal.signalSize; n++) {
+            mod = (signal.tau + n) % signal.signalSize;
+            curSum += signal.values[0][n] * signal.values[1][mod];
+        }
+
+        // Save processing results for the current tau value
+
+        results.value = curSum;
+        savePartialResults(id, &results);
     }
 
     statusWorker[id] = EXIT_SUCCESS;

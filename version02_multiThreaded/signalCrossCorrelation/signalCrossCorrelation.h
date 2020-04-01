@@ -1,11 +1,12 @@
 /**
- *  \file wordCount.h (interface file)
+ *  \file signalCrossCorrelation.h (interface file)
  *
- *  \brief Program that reads in succession several text files and prints a
- * listing of the occurring frequency of word lengths and the number of vowels
- * in each word for each of the supplied texts.
+ *  \brief Cross Correlation Problem simulation parameters.
  *
- *  Problem simulation parameters.
+ *  The program 'signalCrossCorrelation' reads in succession the values of pairs
+ * of signals stored in several data files whose names are provided, computes
+ * the circular cross-correlation of each pair and appends it to the
+ * corresponding file.
  *
  *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
  */
@@ -16,6 +17,6 @@
 /* Generic parameters */
 
 /** \brief number of worker threads */
-#define NUMWORKERS 1
+#define NUMWORKERS 8
 
 #endif /* SIGNALCROSSCORRELATION_H */

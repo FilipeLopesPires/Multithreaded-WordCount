@@ -1,3 +1,13 @@
+/**
+ *  \file signalCrossCorrelation.c (implementation file)
+ *
+ *  \brief Program that computes the circular cross-correlation of the values of two signals.
+ *
+ *  The program 'signalCrossCorrelation' reads in succession the values of pairs of signals stored in several data files whose names are provided, computes the circular cross-correlation of each pair and appends it to the corresponding file.
+ *
+ *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
+ */
+
 #include <getopt.h>
 #include <math.h>
 #include <stdbool.h>
@@ -5,11 +15,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/** 
+ *  \brief Main function called when the program is executed.
+ * 
+ *  Main function of the 'signalCrossCorrelation' program containing all of its logic.
+ *  The function receives the paths to the files containing the signals.
+ * 
+ *  \param argc number of files passed to the program.
+ *  \param argv paths to the signal files.
+ * 
+ */
 int main(int argc, char **argv) {
-    // Validate program arguments
-    int opt;
+
+    // Declare useful variables
+    
+    /** \brief number of signals each file contains. */
     int numberSignals = 2;
+
+    /** \brief auxiliar variable to retrieve the result of getopt() for all arguments passed to the program. */
+    int opt;
+
+    /** \brief auxiliar variable to determine whether the operator -c was used in the program's arguments or not. */
     bool compareEnabled = false;
+
+    /** \brief pointer to the file currently under processing. */
+    FILE *file;
+
+    /** \brief number of elements, given by the first 4 bytes of the current file. */
+    int nElem;
+
+    /** \brief array containing the values of the signals present in the current file. */
+    double *sig[numberSignals];
+
+    /** \brief auxiliar variable containing the current signal under analysis, belonging to the current file. */
+    double curSig;
+
+    // double *results; // array containing the results of the similarity evaluation
+
+    // Validate program arguments
 
     while ((opt = getopt(argc, argv, "c")) != -1) {
         switch (opt) {
@@ -25,17 +68,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    // Declare useful variables
-    FILE *file;
-    int nElem;  // number of elements, given by the first 4 bytes of the
-                // processed file
-    double *sig[numberSignals];  // array containing the values of the signals
-                                 // present in the file
-    double curSig;  // auxiliar variable containing the current signal under
-                    // analysis
-    // double
-    //     *results;  // array containing the results of the similarity
-    //     evaluation
+    // Process all files passed as arguments and calculate the cross correlation in each
 
     for (int fileIndex = optind; fileIndex < argc; fileIndex++) {
         printf("Processing file %s\n", argv[fileIndex]);

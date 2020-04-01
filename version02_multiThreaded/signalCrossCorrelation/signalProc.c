@@ -1,22 +1,16 @@
 /**
- *  \file textProc.c (implementation file)
+ *  \file signalProc.c (implementation file)
  *
- *  \brief Program that reads in succession several text files and prints a
- *  listing of the occurring frequency of word lengths and the number of vowels
- *  in each word for each of the supplied texts.
+ *  \brief Cross Correlation Problem Data transfer region implemented as a monitor.
  *
- *  Synchronization based on monitors.
- *  Both threads and the monitor are implemented using the pthread library which
- *  enables the creation of a monitor of the Lampson / Redell type.
- *
- *  Data transfer region implemented as a monitor.
- *
+ *  The program 'signalCrossCorrelation' deploys worker threads that read in succession the values of pairs of signals stored in several data files whose names are provided, compute the circular cross-correlation of each pair and append it to the corresponding file.
+ *  Threads synchronization is based on monitors. Both threads and the monitor are implemented using the pthread library which enables the creation of a monitor of the Lampson / Redell type.
  *  Definition of the operations carried out by the workers:
- *     \li getTextChunk
+ *     \li getSignalAndTau
  *     \li savePartialResults
  *     \li presentFilenames
- *     \li printResults.
- *
+ *     \li writeOrPrintResults.
+ * 
  *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
  */
 
@@ -61,6 +55,12 @@ int* signalSizes;
 double curSig;
 bool stillExistsText;
 
+/** 
+ *  \brief Monitor initialization.
+ * 
+ *  Monitor conditions and variables are initialized.
+ * 
+ */
 void initialization(void) {
     currentFileIdx = 0;
     currentTau = 0;
@@ -71,8 +71,17 @@ void initialization(void) {
     printf("Monitor initialized.\n");
 }
 
-bool getSignalAndTau(int workerId, struct signal signal,
-                     struct results results) {
+/** 
+ *  \brief Retrieval of the signals of a file and a given tau value.
+ * 
+ *  Monitor retrieves the signal values of a file and assigns its processing with a given tau value for the worker that called the method.
+ * 
+ *  \param workerId internal worker thread identifier.
+ *  \param signal structure containing the signal and tau values of a given file.
+ *  \param results structure to store the cross correlation results for a given file.
+ * 
+ */
+bool getSignalAndTau(int workerId, struct signal* signal, struct results* results) {
     // Enter monitor
     if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) {
         errno = statusWorker[workerId];
@@ -100,8 +109,7 @@ bool getSignalAndTau(int workerId, struct signal signal,
             free(currentFile[1]);
 
             for (int n = 0; n < 2; n++) {
-                if ((currentFile[n] = malloc(signalSizes[currentFileIdx] *
-                                             sizeof(double))) == NULL) {
+                if ((currentFile[n] = malloc(signalSizes[currentFileIdx] * sizeof(double))) == NULL) {
                     // malloc error message
                     perror(
                         "Error while allocating memory in presentFilenames.\n");
@@ -116,11 +124,11 @@ bool getSignalAndTau(int workerId, struct signal signal,
         }
 
         if (currentTau < signalSizes[currentFileIdx]) {
-            results.fileId = currentFileIdx;
-            results.tau = currentTau;
-            signal.tau = currentTau;
-            signal.values = currentFile;
-            signal.signalSize = signalSizes[currentFileIdx];
+            results->fileId = currentFileIdx;
+            results->tau = currentTau;
+            signal->tau = currentTau;
+            signal->values = currentFile;
+            signal->signalSize = signalSizes[currentFileIdx];
             currentTau++;
         } else {
             currentTau = 0;
@@ -139,7 +147,16 @@ bool getSignalAndTau(int workerId, struct signal signal,
     return stillExistsText;
 }
 
-void savePartialResults(int workerId, struct results res) {
+/** 
+ *  \brief Update of global results.
+ * 
+ *  Monitor updates the global results with the results achieved by the worker that called the method.
+ * 
+ *  \param workerId internal worker thread identifier.
+ *  \param results structure containing the cross correlation results for a given file.
+ * 
+ */
+void savePartialResults(int workerId, struct results* res) {
     // Enter monitor
     if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) {
         errno = statusWorker[workerId];
@@ -149,7 +166,7 @@ void savePartialResults(int workerId, struct results res) {
     }
     pthread_once(&init, initialization);
 
-    results[res.fileId][res.tau] = res.value;
+    results[res->fileId][res->tau] = res->value;
 
     // Leave monitor
     if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) {
@@ -160,6 +177,15 @@ void savePartialResults(int workerId, struct results res) {
     }
 }
 
+/** 
+ *  \brief Presentation of all the files to be processed.
+ * 
+ *  Monitor finds the files to be processed through their paths and opens them for processing.
+ * 
+ *  \param size number of files to be presented.
+ *  \param fileNames array containing the paths to the files.
+ * 
+ */
 void presentFilenames(int size, char** fileNames) {
     // Enter monitor
     if ((statusMain = pthread_mutex_lock(&accessCR)) != 0) {
@@ -239,6 +265,14 @@ void presentFilenames(int size, char** fileNames) {
     }
 }
 
+/** 
+ *  \brief Presentation of the global results achieved by all worker threads.
+ * 
+ *  Monitor prints in a formatted form the results of the 'signalCrossCorrelation' program execution.
+ * 
+ *  \param write boolean variable that tells if the results are to be written to a file or simply printed into the terminal.
+ * 
+ */
 void writeOrPrintResults(bool write) {
     // Enter monitor
     if ((statusMain = pthread_mutex_lock(&accessCR)) != 0) {
@@ -283,6 +317,12 @@ void writeOrPrintResults(bool write) {
     }
 }
 
+/** 
+ *  \brief Destruction of monitor variables.
+ * 
+ *  Monitor frees memory allocated for its variables.
+ * 
+ */
 void destroy(void) {
     // Enter monitor
     if ((statusMain = pthread_mutex_lock(&accessCR)) != 0) {

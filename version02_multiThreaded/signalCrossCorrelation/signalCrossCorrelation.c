@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
         printf("thread worker, with id %u, has terminated: ", i);
         printf("its status was %d\n", *status_p);
     }
-    printResults();
+    writeOrPrintResults(true);
     destroy();
 
     // Execution time calculation
@@ -115,9 +115,15 @@ static void *worker(void *par) {
     // Initialize thread variables
     id = *((int *)par);
     struct signal signal;
+    signal.tau = 0;
+    signal.values = NULL;
+    signal.signalSize = 0;
     struct results results;
+    results.tau = 0;
+    results.value = 0;
+    results.fileId = 0;
 
-    while (getSignalAndTau(id, signal, results)) {
+    while (getSignalAndTau(id, &signal, &results)) {
     }
 
     statusWorker[id] = EXIT_SUCCESS;

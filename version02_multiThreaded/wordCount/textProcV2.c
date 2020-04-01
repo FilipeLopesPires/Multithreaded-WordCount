@@ -60,7 +60,6 @@ int** wordSizeResults;
 int*** vowelCountResults;
 int* numberWordsResults;
 int* maximumSizeWordResults;
-int* minimumSizeWordResults;
 int filesSize;
 int currentFileIdx = 0;
 char symbol;

@@ -71,8 +71,8 @@ void initialization(void) {
     printf("Monitor initialized.\n");
 }
 
-bool getSignalAndTau(int workerId, struct signal signal,
-                     struct results results) {
+bool getSignalAndTau(int workerId, struct signal* signal,
+                     struct results* results) {
     // Enter monitor
     if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) {
         errno = statusWorker[workerId];
@@ -116,12 +116,13 @@ bool getSignalAndTau(int workerId, struct signal signal,
         }
 
         if (currentTau < signalSizes[currentFileIdx]) {
-            results.fileId = currentFileIdx;
-            results.tau = currentTau;
-            signal.tau = currentTau;
-            signal.values = currentFile;
-            signal.signalSize = signalSizes[currentFileIdx];
+            results->fileId = currentFileIdx;
+            results->tau = currentTau;
+            signal->tau = currentTau;
+            signal->values = currentFile;
+            signal->signalSize = signalSizes[currentFileIdx];
             currentTau++;
+            // printf("%d ", currentTau);
         } else {
             currentTau = 0;
             currentFileIdx++;
@@ -139,7 +140,7 @@ bool getSignalAndTau(int workerId, struct signal signal,
     return stillExistsText;
 }
 
-void savePartialResults(int workerId, struct results res) {
+void savePartialResults(int workerId, struct results* res) {
     // Enter monitor
     if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) {
         errno = statusWorker[workerId];
@@ -149,7 +150,7 @@ void savePartialResults(int workerId, struct results res) {
     }
     pthread_once(&init, initialization);
 
-    results[res.fileId][res.tau] = res.value;
+    results[res->fileId][res->tau] = res->value;
 
     // Leave monitor
     if ((statusWorker[workerId] = pthread_mutex_unlock(&accessCR)) != 0) {

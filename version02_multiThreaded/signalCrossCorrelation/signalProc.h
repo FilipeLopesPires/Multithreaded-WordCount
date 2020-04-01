@@ -26,10 +26,10 @@
 #include "results.h"
 #include "signal.h"
 
-extern bool getSignalAndTau(int workerId, struct signal signal,
-                            struct results results);
-extern void savePartialResults(int workerId, struct results results);
-extern void presentFilenames(int size, char** filenames);
+extern bool getSignalAndTau(int workerId, struct signal *signal,
+                            struct results *results);
+extern void savePartialResults(int workerId, struct results *results);
+extern void presentFilenames(int size, char **filenames);
 extern void writeOrPrintResults(bool write);
 extern void destroy();
 

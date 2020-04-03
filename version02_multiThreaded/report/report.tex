@@ -17,7 +17,7 @@
 %	 TITLE SLIDE
 %----------------------------------------------------------------------------------------
 
-\title{Word Count Problem \& Cross Correlation Calculation}
+\title{Word Count Problem \& \\Cross Correlation Calculation}
 
 \subtitle{Solutions Diagram and Entity Interaction}
 
@@ -46,12 +46,13 @@
 %------------------------------------------------
 
 \begin{frame}{Multi-Thread Mapping}
-	Given that our group had an initial single-thread implementation of the solution for this problem, we needed to map the program to a multi-thread environment and obviously implement it. The necessary mapping were:
+	The team efforts were focused on mapping the initial single-threaded implementation of the program to a multi-threaded environment.
+	The required mapping was:
 	\begin{itemize}
 		\item A shared memory space would keep track of the files to be processed.
-		\item Each worker would request the shared memory a chunk of text, process it and return the results to the shared memory.
-		\item The shared memory would manage the files content internally enabling the distribution of chunks of text.
-		\item The shared memory would keep track of all received results, enabling a print in the end of the processing of all files.
+		\item Each worker thread would ask the shared memory for a chunk of text, process it and return the results to the shared memory.
+		\item The shared memory would manage the files' content internally, enabling the distribution of chunks of text.
+		\item The shared memory would keep track of all received results, enabling a print in the end of the global results processing of each file given as input.
 	\end{itemize}
 \end{frame}
 
@@ -84,12 +85,14 @@
 %------------------------------------------------
 
 \begin{frame}{Multi-Thread Mapping}
-	Given that our group had an initial single-thread implementation of the solution for this problem, we needed to map the program to a multi-thread environment and obviously implement it. The necessary mapping were:
+	Once again, our task was to map a single-threaded implementation of the solution for this second problem, previously developed by us, to a multi-threaded
+	version of such implementation.
+	The required mapping was:
 	\begin{itemize}
 		\item A shared memory space would keep track of the files to be processed.
-		\item Each worker would request the shared memory a signal and a specific $\tau$, calculate the cross correlation and return the results to the shared memory.
-		\item The shared memory would manage the files content internally enabling the distribution of chunks of text.
-		\item The shared memory would keep track of all received results, enabling the program to wite the results no the end of each file or to print to the console the results.
+		\item Each worker thread would ask the shared memory for the values of a signal and a specific $\tau$, calculate the cross correlation and return the results to the shared memory.
+		\item The shared memory would manage the files' content internally, enabling the distribution of the same signals but with different $\tau$ values.
+		\item The shared memory would keep track of all received results, enabling the program to write the results in the end of each file or to print them to the console.
 	\end{itemize}
 \end{frame}
 

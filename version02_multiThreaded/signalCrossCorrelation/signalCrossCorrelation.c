@@ -93,11 +93,11 @@ int main(int argc, char **argv) {
 
     // Retrieval of filenames
 
-    char *files[argc - 1];
-    for (i = 1; i < argc; i++) {
-        files[i - 1] = argv[i];
+    char *files[argc - optind];
+    for (i = optind; i < argc; i++) {
+        files[i - optind] = argv[i];
     }
-    presentFilenames(argc - 1, files);
+    presentFilenames(argc - optind, files);
 
     // Generation of worker threads
 

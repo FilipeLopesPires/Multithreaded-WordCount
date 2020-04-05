@@ -74,7 +74,7 @@ extern void presentFilenames(int size, char** filenames);
  * a file or simply printed into the terminal.
  *
  */
-extern void writeOrPrintResults(bool write);
+extern void writeOrPrintResults(bool show);
 
 /**
  *  \brief Destruction of monitor variables.

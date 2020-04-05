@@ -55,7 +55,7 @@ int currentFileIdx;
 double** results;
 int nElem;
 int currentTau;
-double* currentFile[2];
+double** currentFile;
 int* signalSizes;
 double curSig;
 bool stillExistsText;
@@ -68,7 +68,8 @@ bool stillExistsText;
  */
 void initialization(void) {
     currentFileIdx = 0;
-    currentTau = 0;
+    currentTau = -1;
+    currentFile = malloc(sizeof(double*) * 2);
     currentFile[0] = malloc(1);
     currentFile[1] = malloc(1);
 
@@ -112,7 +113,7 @@ bool getSignalAndTau(int workerId, struct signal* signal,
 
     stillExistsText = false;
     if (currentFileIdx < filesSize) {
-        if (currentTau == 0) {
+        if (currentTau == -1) {
             free(currentFile[0]);
             free(currentFile[1]);
 
@@ -121,7 +122,7 @@ bool getSignalAndTau(int workerId, struct signal* signal,
                                              sizeof(double))) == NULL) {
                     // malloc error message
                     perror(
-                        "Error while allocating memory in presentFilenames.\n");
+                        "Error while allocating memory in getSignalAndTau.\n");
                     statusWorker[workerId] = EXIT_FAILURE;
                     pthread_exit(&statusWorker[workerId]);
                 }
@@ -132,19 +133,21 @@ bool getSignalAndTau(int workerId, struct signal* signal,
             }
         }
 
+        stillExistsText = true;
+        currentTau++;
         if (currentTau < signalSizes[currentFileIdx]) {
             results->fileId = currentFileIdx;
             results->tau = currentTau;
             signal->tau = currentTau;
             signal->values = currentFile;
             signal->signalSize = signalSizes[currentFileIdx];
-            currentTau++;
-            // printf("%d ", currentTau);
         } else {
-            currentTau = 0;
+            currentTau = -1;
             currentFileIdx++;
+            if (currentFileIdx >= filesSize) {
+                stillExistsText = false;
+            }
         }
-        stillExistsText = true;
     }
 
     // Leave monitor
@@ -239,7 +242,7 @@ void presentFilenames(int size, char** fileNames) {
             files[i] = fopen(filenames[i], "r+");
             if (files[i] == NULL) {
                 // end of file error
-                printf("Error while opening file!");
+                printf("Error while opening file!\n");
                 exit(1);
             }
 
@@ -288,7 +291,7 @@ void presentFilenames(int size, char** fileNames) {
  * a file or simply printed into the terminal.
  *
  */
-void writeOrPrintResults(bool write) {
+void writeOrPrintResults(bool show) {
     // Enter monitor
     if ((statusMain = pthread_mutex_lock(&accessCR)) != 0) {
         errno = statusMain;
@@ -302,11 +305,11 @@ void writeOrPrintResults(bool write) {
         printf("Processing file %s\n", filenames[i]);
 
         int numErrors = 0;
-        if (!write) {
+        if (show) {
             printf("Comparing one by one:\n");
         }
         for (int j = 0; j < signalSizes[i]; j++) {
-            if (write) {
+            if (!show) {
                 fwrite(&results[i][j], 8, 1, files[i]);
             } else {
                 fread(&curSig, 8, 1, files[i]);
@@ -315,10 +318,11 @@ void writeOrPrintResults(bool write) {
                 } else {
                     numErrors++;
                     printf("0");
+                    printf(" %d ", j);
                 }
             }
         }
-        if (!write) {
+        if (show) {
             printf("\nNum. Errors Found: %d\n", numErrors);
         }
     }

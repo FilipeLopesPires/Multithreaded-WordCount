@@ -1,5 +1,5 @@
 /**
- *  \file textProcV2.c (implementation file)
+ *  \file textProc.c (implementation file)
  *
  *  \brief Word Count Problem Data transfer region implemented as a monitor.
  *
@@ -53,6 +53,7 @@ int** wordSizeResults;
 int*** vowelCountResults;
 int* numberWordsResults;
 int* maximumSizeWordResults;
+int* minimumSizeWordResults;
 int filesSize;
 int currentFileIdx = 0;
 char symbol;

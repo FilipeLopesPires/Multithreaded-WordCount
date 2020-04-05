@@ -1,5 +1,5 @@
 /**
- *  \file wordCountV1.c (implementation file)
+ *  \file wordCount.c (implementation file)
  *
  *  \brief Multi-threaded implementation of the program that computes the occurring frequency of word lengths and the number of vowels in each word for texts given as input.
  *

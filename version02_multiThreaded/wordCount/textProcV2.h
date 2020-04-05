@@ -1,5 +1,5 @@
 /**
- *  \file textProcV2.h (interface file)
+ *  \file textProc.h (interface file)
  *
  *  \brief Word Count Problem Monitor methods definition.
  *

@@ -17,6 +17,6 @@
 /* Generic parameters */
 
 /** \brief number of worker threads */
-#define NUMWORKERS 8
+#define NUMWORKERS 10
 
 #endif /* SIGNALCROSSCORRELATION_H */

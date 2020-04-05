@@ -3,14 +3,16 @@
  *
  *  \brief Word Count Problem Data transfer region implemented as a monitor.
  *
- *  The program 'wordCount' deploys worker threads that read in succession several text files text#.txt and calculate the occurring frequency of word lengths and the number of vowels in each word for each of the supplied texts, in the end the program prints the results achieved by its workers.
- *  Threads synchronization is based on monitors. Both threads and the monitor are implemented using the pthread library which enables the creation of a monitor of the Lampson / Redell type.
- *  Definition of the operations carried out by the workers:
- *     \li getTextChunk
- *     \li savePartialResults
- *     \li presentFilenames
- *     \li printResults.
- * 
+ *  The program 'wordCount' deploys worker threads that read in succession
+ * several text files text#.txt and calculate the occurring frequency of word
+ * lengths and the number of vowels in each word for each of the supplied texts,
+ * in the end the program prints the results achieved by its workers. Threads
+ * synchronization is based on monitors. Both threads and the monitor are
+ * implemented using the pthread library which enables the creation of a monitor
+ * of the Lampson / Redell type. Definition of the operations carried out by the
+ * workers: \li getTextChunk \li savePartialResults \li presentFilenames \li
+ * printResults.
+ *
  *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
  */
 
@@ -37,7 +39,8 @@ extern int statusWorker[NUMWORKERS];
 /** \brief main thread return status value */
 extern int statusMain;
 
-/** \brief boolean defining wether files have been read and monitor is ready for use or not */
+/** \brief boolean defining wether files have been read and monitor is ready for
+ * use or not */
 bool areFilenamesPresented;
 
 pthread_mutex_t accessCR = PTHREAD_MUTEX_INITIALIZER;
@@ -60,13 +63,12 @@ char symbol;
 char completeSymbol[MAXCHARSIZE];  // buffer for complex character construction
 int ones;
 bool incrementFileIdx;
-bool stillExistsText;
 
-/** 
+/**
  *  \brief Monitor initialization.
- * 
+ *
  *  Monitor conditions and variables are initialized.
- * 
+ *
  */
 void initialization(void) {
     strcpy(tmpWord, "");
@@ -76,17 +78,20 @@ void initialization(void) {
     printf("Monitor initialized.\n");
 }
 
-/** 
+/**
  *  \brief Retrieval of a portion of text (called text chunk).
- * 
- *  Monitor retrieves a portion of text (called text chunk) and assigns its processing for the worker that called the method.
- * 
+ *
+ *  Monitor retrieves a portion of text (called text chunk) and assigns its
+ * processing for the worker that called the method.
+ *
  *  \param workerId internal worker thread identifier.
  *  \param textChunk portion of text to be processed by the worker.
- *  \param controlInfo structure containing control variables regarding the results of the worker.
- * 
+ *  \param controlInfo structure containing control variables regarding the
+ * results of the worker.
+ *
  */
-bool getTextChunk(int workerId, char* textChunk, struct controlInfo controlInfo) {
+bool getTextChunk(int workerId, char* textChunk,
+                  struct controlInfo controlInfo) {
     // Enter monitor
     if ((statusWorker[workerId] = pthread_mutex_lock(&accessCR)) != 0) {
         errno = statusWorker[workerId];
@@ -106,6 +111,7 @@ bool getTextChunk(int workerId, char* textChunk, struct controlInfo controlInfo)
             pthread_exit(&statusWorker[workerId]);
         }
     }
+    bool stillExistsText;
 
     strcat(textChunk, tmpWord);
     strcpy(tmpWord, "");
@@ -184,14 +190,16 @@ bool getTextChunk(int workerId, char* textChunk, struct controlInfo controlInfo)
     return stillExistsText;
 }
 
-/** 
+/**
  *  \brief Update of global results.
- * 
- *  Monitor updates the global results with the results achieved by the worker that called the method.
- * 
+ *
+ *  Monitor updates the global results with the results achieved by the worker
+ * that called the method.
+ *
  *  \param workerId internal worker thread identifier.
- *  \param controlInfo structure containing control variables regarding the results of the worker.
- * 
+ *  \param controlInfo structure containing control variables regarding the
+ * results of the worker.
+ *
  */
 void savePartialResults(int workerId, struct controlInfo controlInfo) {
     // Enter monitor
@@ -232,14 +240,15 @@ void savePartialResults(int workerId, struct controlInfo controlInfo) {
     }
 }
 
-/** 
+/**
  *  \brief Presentation of all the files to be processed.
- * 
- *  Monitor finds the files to be processed through their paths and opens them for processing.
- * 
+ *
+ *  Monitor finds the files to be processed through their paths and opens them
+ * for processing.
+ *
  *  \param size number of files to be presented.
  *  \param fileNames array containing the paths to the files.
- * 
+ *
  */
 void presentFilenames(int size, char** fileNames) {
     // Enter monitor
@@ -326,11 +335,12 @@ void presentFilenames(int size, char** fileNames) {
     }
 }
 
-/** 
+/**
  *  \brief Presentation of the global results achieved by all worker threads.
- * 
- *  Monitor prints in a formatted form the results of the 'wordCount' program execution.
- * 
+ *
+ *  Monitor prints in a formatted form the results of the 'wordCount' program
+ * execution.
+ *
  */
 void printResults() {
     // Enter monitor
@@ -399,11 +409,11 @@ void printResults() {
     }
 }
 
-/** 
+/**
  *  \brief Destruction of monitor variables.
- * 
+ *
  *  Monitor frees memory allocated for its variables.
- * 
+ *
  */
 void destroy(void) {
     // Enter monitor

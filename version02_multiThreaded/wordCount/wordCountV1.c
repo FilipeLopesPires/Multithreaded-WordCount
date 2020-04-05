@@ -27,6 +27,8 @@
 #include "textProcV1.h"
 #include "wordCount.h"
 
+#define BILLION 1000000000.0
+
 /** \brief worker life cycle routine. */
 static void *worker(void *id);
 
@@ -85,7 +87,7 @@ int main(int argc, char **argv) {
     int i;
 
     /** \brief time limits (for execution time calculation). */
-    double t0, t1;
+    struct timespec t0, t1; //double t0, t1;
 
     // Initialization of thread IDs
 
@@ -93,7 +95,8 @@ int main(int argc, char **argv) {
         workerID[i] = i;
     }
     srandom((unsigned int)getpid());
-    t0 = ((double)clock()) / CLOCKS_PER_SEC;
+    //t0 = ((double)clock()) / CLOCKS_PER_SEC;
+    clock_gettime(CLOCK_REALTIME, &t0);
 
     // Retrieval of filenames
 
@@ -128,8 +131,12 @@ int main(int argc, char **argv) {
 
     // Execution time calculation
 
-    t1 = ((double)clock()) / CLOCKS_PER_SEC;
-    printf("\nElapsed time = %.6f s\n", t1 - t0);
+    //t1 = ((double)clock()) / CLOCKS_PER_SEC;
+    //printf("\nElapsed time = %.6f s\n", t1 - t0);
+
+    clock_gettime(CLOCK_REALTIME, &t1);
+    double exec_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / BILLION;
+    printf("\nElapsed time = %.6f s\n", exec_time);
 
     exit(EXIT_SUCCESS);
 }

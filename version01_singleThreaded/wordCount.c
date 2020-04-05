@@ -16,6 +16,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#define BILLION 1000000000.0
+
 /** \brief maximum size possible for a word. */
 #define MAXSIZE 50
 

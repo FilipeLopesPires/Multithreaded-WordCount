@@ -12,7 +12,7 @@
 #define WORDCOUNT_H
 
 /** \brief number of worker threads. */
-#define NUMWORKERS 5
+#define NUMWORKERS 4
 
 /** \brief maximum size possible for a word. */
 #define MAXSIZE 50

@@ -135,13 +135,12 @@ bool getSignalAndTau(int workerId, struct signal* signal,
 
         stillExistsText = true;
         currentTau++;
-        if (currentTau < signalSizes[currentFileIdx]) {
-            results->fileId = currentFileIdx;
-            results->tau = currentTau;
-            signal->tau = currentTau;
-            signal->values = currentFile;
-            signal->signalSize = signalSizes[currentFileIdx];
-        } else {
+        results->fileId = currentFileIdx;
+        results->tau = currentTau;
+        signal->tau = currentTau;
+        signal->values = currentFile;
+        signal->signalSize = signalSizes[currentFileIdx];
+        if (currentTau > signalSizes[currentFileIdx]) {
             currentTau = -1;
             currentFileIdx++;
             if (currentFileIdx >= filesSize) {

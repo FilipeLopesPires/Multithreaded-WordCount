@@ -55,10 +55,9 @@ int currentFileIdx;
 double** results;
 int nElem;
 int currentTau;
-double** currentFile;
+double* currentFile[2];
 int* signalSizes;
 double curSig;
-bool stillExistsText;
 
 /**
  *  \brief Monitor initialization.
@@ -69,9 +68,6 @@ bool stillExistsText;
 void initialization(void) {
     currentFileIdx = 0;
     currentTau = -1;
-    currentFile = malloc(sizeof(double*) * 2);
-    currentFile[0] = malloc(1);
-    currentFile[1] = malloc(1);
 
     pthread_cond_init(&filenamesPresented, NULL);
     printf("Monitor initialized.\n");
@@ -111,12 +107,9 @@ bool getSignalAndTau(int workerId, struct signal* signal,
         }
     }
 
-    stillExistsText = false;
+    bool stillExistsText;
     if (currentFileIdx < filesSize) {
         if (currentTau == -1) {
-            free(currentFile[0]);
-            free(currentFile[1]);
-
             for (int n = 0; n < 2; n++) {
                 if ((currentFile[n] = malloc(signalSizes[currentFileIdx] *
                                              sizeof(double))) == NULL) {
@@ -133,20 +126,24 @@ bool getSignalAndTau(int workerId, struct signal* signal,
             }
         }
 
-        stillExistsText = true;
-        currentTau++;
         results->fileId = currentFileIdx;
+        signal->values[0] = currentFile[0];
+        signal->values[1] = currentFile[1];
+        signal->signalSize = signalSizes[currentFileIdx];
+
+        currentTau++;
         results->tau = currentTau;
         signal->tau = currentTau;
-        signal->values = currentFile;
-        signal->signalSize = signalSizes[currentFileIdx];
         if (currentTau > signalSizes[currentFileIdx]) {
             currentTau = -1;
             currentFileIdx++;
-            if (currentFileIdx >= filesSize) {
-                stillExistsText = false;
-            }
         }
+    }
+
+    if (currentFileIdx >= filesSize) {
+        stillExistsText = false;
+    } else {
+        stillExistsText = true;
     }
 
     // Leave monitor
@@ -162,8 +159,8 @@ bool getSignalAndTau(int workerId, struct signal* signal,
 /**
  *  \brief Update of global results.
  *
- *  Monitor updates the global results with the results achieved by the worker
- * that called the method.
+ *  Monitor updates the global results with the results achieved by the
+ * worker that called the method.
  *
  *  \param workerId internal worker thread identifier.
  *  \param results structure containing the cross correlation results for a
@@ -194,8 +191,8 @@ void savePartialResults(int workerId, struct results* res) {
 /**
  *  \brief Presentation of all the files to be processed.
  *
- *  Monitor finds the files to be processed through their paths and opens them
- * for processing.
+ *  Monitor finds the files to be processed through their paths and opens
+ * them for processing.
  *
  *  \param size number of files to be presented.
  *  \param fileNames array containing the paths to the files.
@@ -254,10 +251,6 @@ void presentFilenames(int size, char** fileNames) {
                 statusMain = EXIT_FAILURE;
                 pthread_exit(&statusMain);
             }
-
-            for (int l = 0; l < nElem; l++) {
-                results[i][l] = 0;
-            }
         }
         areFilenamesPresented = true;
         printf("Files presented.\n");
@@ -281,13 +274,14 @@ void presentFilenames(int size, char** fileNames) {
 }
 
 /**
- *  \brief Presentation of the global results achieved by all worker threads.
+ *  \brief Presentation of the global results achieved by all worker
+ * threads.
  *
  *  Monitor prints in a formatted form the results of the
  * 'signalCrossCorrelation' program execution.
  *
- *  \param write boolean variable that tells if the results are to be written to
- * a file or simply printed into the terminal.
+ *  \param write boolean variable that tells if the results are to be
+ * written to a file or simply printed into the terminal.
  *
  */
 void writeOrPrintResults(bool show) {
@@ -310,16 +304,17 @@ void writeOrPrintResults(bool show) {
         for (int j = 0; j < signalSizes[i]; j++) {
             if (!show) {
                 fwrite(&results[i][j], 8, 1, files[i]);
-            } else {
-                fread(&curSig, 8, 1, files[i]);
-                if (curSig == results[i][j]) {
-                    printf("1");
-                } else {
-                    numErrors++;
-                    printf("0");
-                    printf(" %d ", j);
-                }
             }
+            // else {
+            //     fread(&curSig, 8, 1, files[i]);
+            //     if (curSig == results[i][j]) {
+            //         printf("1");
+            //     } else {
+            //         numErrors++;
+            //         printf("0");
+            //         printf(" %d ", j);
+            //     }
+            // }
         }
         if (show) {
             printf("\nNum. Errors Found: %d\n", numErrors);
@@ -354,6 +349,7 @@ void destroy(void) {
     // Free allocated memory
     free(files);
     free(results);
+    free(signalSizes);
     printf("Monitor destroyed.\n");
 
     // Leave monitor

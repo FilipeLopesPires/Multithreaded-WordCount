@@ -1,7 +1,8 @@
 /**
  *  \file results.h (interface file)
  *
- *  \brief Definition of the structure containing the cross correlation results for a given file.
+ *  \brief Definition of the structure containing the cross correlation results
+ * for a given file.
  *
  *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
  */
@@ -13,7 +14,6 @@
  *  \brief structure containing the cross correlation results for a given file.
  */
 struct results {
-
     /** \brief identifier of the file the results belongs to. */
     int fileId;
 

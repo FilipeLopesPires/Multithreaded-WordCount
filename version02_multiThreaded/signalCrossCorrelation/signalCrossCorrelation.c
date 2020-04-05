@@ -65,7 +65,6 @@ int main(int argc, char **argv) {
     while ((opt = getopt(argc, argv, "c")) != -1) {
         switch (opt) {
             case 'c':
-                // numberSignals = 3;
                 compareEnabled = true;
                 break;
         }
@@ -151,18 +150,20 @@ static void *worker(void *par) {
     // Instantiate and initialize thread variables
 
     int id = *((int *)par);  // worker ID
-    struct signal signal = {.signalSize = 0, .values = NULL, .tau = -1};
-    struct results results = {.fileId = 0, .tau = -1, .value = 0.0};
+    struct signal signal;
+    struct results results;
     int mod;
     double curSum;
+    int count = 0;
 
     // Calculate cross correlation
-
-    while (getSignalAndTau(id, &signal, &results)) {
+    bool run = getSignalAndTau(id, &signal, &results);
+    while (run) {
         curSum = 0.0;
+        count++;
 
         for (int n = 0; n < signal.signalSize; n++) {
-            mod = (signal.tau + n) % signal.signalSize;
+            mod = (results.tau + n) % signal.signalSize;
             curSum += signal.values[0][n] * signal.values[1][mod];
         }
 
@@ -170,6 +171,7 @@ static void *worker(void *par) {
 
         results.value = curSum;
         savePartialResults(id, &results);
+        run = getSignalAndTau(id, &signal, &results);
     }
 
     statusWorker[id] = EXIT_SUCCESS;

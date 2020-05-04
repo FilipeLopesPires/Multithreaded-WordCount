@@ -33,6 +33,8 @@
 #include "signal.h"
 #include "signalProc.h"
 
+#define BILLION 1000000000.0
+
 /** \brief worker life cycle routine */
 static void *worker(void *id);
 
@@ -80,14 +82,17 @@ int main(int argc, char **argv) {
         workerID[NUMWORKERS];  // workers application defined thread id array
     int *status_p;             // pointer to execution status
     int i;                     // aux variable for local loops
-    double t0, t1;             // time limits
+    //double t0, t1;             // time limits
+    struct timespec t0, t1;    // time variables to calculate execution time
 
     // Initialization of thread IDs
 
     for (i = 0; i < NUMWORKERS; i++) {
         workerID[i] = i;
     }
-    t0 = ((double)clock()) / CLOCKS_PER_SEC;
+    srandom((unsigned int)getpid());
+    //t0 = ((double)clock()) / CLOCKS_PER_SEC;
+    clock_gettime(CLOCK_REALTIME, &t0);
 
     // Retrieval of filenames
 
@@ -123,8 +128,12 @@ int main(int argc, char **argv) {
 
     // Execution time calculation
 
-    t1 = ((double)clock()) / CLOCKS_PER_SEC;
-    printf("\nElapsed time = %.6f s\n", t1 - t0);
+    //t1 = ((double)clock()) / CLOCKS_PER_SEC;
+    //printf("\nElapsed time = %.6f s\n", t1 - t0);
+
+    clock_gettime(CLOCK_REALTIME, &t1);
+    double exec_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / BILLION;
+    printf("\nElapsed time = %.6f s\n", exec_time);
 
     exit(EXIT_SUCCESS);
 }

@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     char** names = NULL;
     int currSize = 0;
     int currentIdx = 0;
-    char* recMsg = malloc(sizeof(char));
+    char* recMsg;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -62,7 +62,9 @@ int main(int argc, char** argv) {
                 strcat(message, ",");
             }
             currentIdx += amountPerWorker;
-            MPI_Send(message, strlen(message), MPI_CHAR, i, 0, MPI_COMM_WORLD);
+            int length = strlen(message) + 1;
+            MPI_Send(&length, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            MPI_Send(message, length, MPI_CHAR, i, 0, MPI_COMM_WORLD);
         }
 
         size--;
@@ -72,6 +74,7 @@ int main(int argc, char** argv) {
         }
 
         for (int i = 0; i < size; i++) {
+            recMsg = malloc(1 * sizeof(char));
             MPI_Recv(recMsg, 1000, MPI_CHAR, i + 1, 0, MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
             strcpy(preordered[i], recMsg);
@@ -80,6 +83,10 @@ int main(int argc, char** argv) {
         while (true) {
             int newSize = ceil((double)size / 2);
             if (newSize == size) {
+                strcpy(message, "done");
+                int length = strlen(message) + 1;
+                MPI_Send(&length, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+                MPI_Send(message, length, MPI_CHAR, 1, 0, MPI_COMM_WORLD);
                 break;
             }
             int control = 0;
@@ -87,7 +94,9 @@ int main(int argc, char** argv) {
             for (int i = 0; i < size; i++) {
                 if (control >= newSize) {
                     strcpy(message, "done");
-                    MPI_Send(message, strlen(message), MPI_CHAR, i + 1, 0,
+                    int length = strlen(message) + 1;
+                    MPI_Send(&length, 1, MPI_INT, i + 1, 0, MPI_COMM_WORLD);
+                    MPI_Send(message, length, MPI_CHAR, i + 1, 0,
                              MPI_COMM_WORLD);
                 } else {
                     strcpy(message, preordered[preorderIdx]);
@@ -95,58 +104,68 @@ int main(int argc, char** argv) {
                     if (preorderIdx < size) {
                         strcat(message, preordered[preorderIdx]);
                     }
-                    MPI_Send(message, strlen(message), MPI_CHAR, i + 1, 0,
+                    int length = strlen(message) + 1;
+                    MPI_Send(&length, 1, MPI_INT, i + 1, 0, MPI_COMM_WORLD);
+                    MPI_Send(message, length, MPI_CHAR, i + 1, 0,
                              MPI_COMM_WORLD);
                 }
                 control++;
             }
             size = newSize;
-            free(preordered);
-            char** preordered = malloc(size * sizeof(char*));
+            preordered = malloc(size * sizeof(char*));
             for (int i = 0; i < size; i++) {
                 preordered[i] = malloc(sizeof(char));
             }
             for (int i = 0; i < size; i++) {
+                recMsg = malloc(1 * sizeof(char));
                 MPI_Recv(recMsg, 1000, MPI_CHAR, i + 1, 0, MPI_COMM_WORLD,
                          MPI_STATUS_IGNORE);
                 strcpy(preordered[i], recMsg);
             }
         }
-
     } else {
-        MPI_Recv(recMsg, 100, MPI_CHAR, rank - 1, 0, MPI_COMM_WORLD,
+        int recInt;
+        MPI_Recv(&recInt, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        recMsg = malloc(recInt * sizeof(char));
+        MPI_Recv(recMsg, recInt, MPI_CHAR, 0, 0, MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
-        printf("%d received message: %s \n", rank, recMsg);
+        while (strcmp(recMsg, "done")) {
+            // char** words = malloc(5 * sizeof(char*));
+            // char* curWord;
+            // curWord = malloc(sizeof(char) * 20);
+            // char* p;
+            // int nWords = 0;
+            // int j = 0;
+            // for (p = recMsg; *p != '\0'; p++) {
+            //     if (*p == ',') {
+            //         curWord[j] = *p;
+            //         j++;
+            //     } else {
+            //         printf("%s\n", curWord);
+            //         words[nWords] = curWord;
+            //         nWords++;
+            //         curWord = malloc(sizeof(char) * 20);
+            //         j = 0;
+            //     }
+            // }
+            // words[nWords] = curWord;
+            // nWords++;
 
-        char** words;
-        char* curWord;
-        curWord = malloc(sizeof(char) * 20);
-        char* p;
-        int nWords = 0;
-        int j = 0;
-        for (p = recMsg; *p != '\0'; p++) {
-            if (*p != ",") {
-                curWord[j] = *p;
-                j++;
-            } else {
-                words[nWords] = curWord;
-                nWords++;
-                curWord = malloc(sizeof(char) * 20);
-                j = 0;
-            }
+            // arrange(nWords, words);
+            // char* message = malloc(sizeof(char));
+
+            // for (int i = 0; i < nWords; i++) {
+            //     message = strcat(message, words[i]);
+            // }
+
+            MPI_Send(recMsg, strlen(recMsg) + 1, MPI_CHAR, 0, 0,
+                     MPI_COMM_WORLD);
+            MPI_Recv(&recInt, 1, MPI_INT, 0, 0, MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+            recMsg = malloc(recInt * sizeof(char));
+            MPI_Recv(recMsg, recInt, MPI_CHAR, 0, 0, MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
         }
-        words[nWords] = curWord;
-        nWords++;
-
-        arrange(nWords, words);
-
-        for (int i = 0; i < nWords; i++) {
-            message = strcat(message, words[i]);
-        }
-
-        printf("%d transmitted message: %s \n", rank, message);
-        MPI_Send(message, strlen(message), MPI_CHAR, (rank + 1) % size, 0,
-                 MPI_COMM_WORLD);
     }
     MPI_Finalize();
 

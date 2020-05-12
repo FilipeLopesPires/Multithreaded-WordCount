@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
         }
 
         // Process files given as input
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < filesSize; i++) {
             maximumSizeWordResults[i] = 0;
             numberWordsResults[i] = 0;
             wordSizeResults[i] = malloc(sizeof(int) * (MAXSIZE));
@@ -250,7 +250,6 @@ int main(int argc, char** argv) {
                 }
                 MPI_Recv(wordSizes, maxWordSize, MPI_INT, workerId, 0,
                          MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
                 int* vowelCounts;
                 if ((vowelCounts = malloc(sizeof(int) * maxWordSize)) == NULL) {
                     perror("Error while allocating memory.\n");

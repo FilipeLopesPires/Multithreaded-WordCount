@@ -268,12 +268,9 @@ int main(int argc, char** argv) {
         int fileId = -1;
         bool continueProcess = true;
 
-        int recInt;
         while (continueProcess) {
             int workingWorkers = 0;
             for (int workerId = 1; workerId <= totalNumWorkers; workerId++) {
-                MPI_Recv(&recInt, 1, MPI_INT, workerId, 0, MPI_COMM_WORLD,
-                         MPI_STATUS_IGNORE);
                 continueProcess = getTextChunk(textChunk, &fileId);
 
                 if (continueProcess) {
@@ -367,7 +364,6 @@ int main(int argc, char** argv) {
         }
 
         while (chunkSize != -1) {
-            MPI_Send(&chunkSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
             MPI_Recv(&fileId, 1, MPI_INT, 0, 0, MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
             if (fileId == -1) {

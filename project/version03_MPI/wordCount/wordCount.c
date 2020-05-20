@@ -20,6 +20,7 @@
  */
 #define BUFFERSIZE 1000
 
+/** \brief auxiliary variable for internal calculations. */
 #define BILLION 1000000000.0
 
 /** \brief array containing all the characters defined as word delimiters. */
@@ -135,6 +136,111 @@ bool getTextChunk(char* textChunk, int* fileId) {
     return stillExistsText;
 }
 
+void initVariables(int argc, char** argv) {
+    filesSize = argc - 1;
+    // Allocate memory
+    if ((files = malloc(sizeof(FILE*) * (filesSize))) == NULL) {
+        perror("Error while allocating memory.\n");
+        exit(1);
+    }
+
+    if ((filenames = malloc(sizeof(char*) * (filesSize))) == NULL) {
+        perror("Error while allocating memory.\n");
+        exit(1);
+    }
+
+    wordSizeResults = malloc(sizeof(int*) * (filesSize));
+    vowelCountResults = malloc(sizeof(int*) * (filesSize));
+    maximumSizeWordResults = malloc(sizeof(int) * (filesSize));
+    numberWordsResults = malloc(sizeof(int) * (filesSize));
+    if (wordSizeResults == NULL || vowelCountResults == NULL ||
+        maximumSizeWordResults == NULL || numberWordsResults == NULL) {
+        perror("Error while allocating memory.\n");
+        exit(1);
+    }
+
+    // Process files given as input
+    for (int i = 0; i < filesSize; i++) {
+        maximumSizeWordResults[i] = 0;
+        numberWordsResults[i] = 0;
+        wordSizeResults[i] = malloc(sizeof(int) * (MAXSIZE));
+        vowelCountResults[i] = malloc(sizeof(int*) * (MAXSIZE));
+        if (wordSizeResults[i] == NULL || vowelCountResults[i] == NULL) {
+            perror("Error while allocating memory.\n");
+            exit(1);
+        }
+        for (int j = 0; j < MAXSIZE; j++) {
+            wordSizeResults[i][j] = 0;
+            if ((vowelCountResults[i][j] = malloc(sizeof(int) * (MAXSIZE))) ==
+                NULL) {
+                perror("Error while allocating memory in.\n");
+                exit(1);
+            }
+            for (int l = 0; l < MAXSIZE; l++) {
+                vowelCountResults[i][j][l] = 0;
+            }
+        }
+    }
+
+    for (int i = 1; i < argc; i++) {
+        filenames[i - 1] = argv[i];
+        files[i - 1] = fopen(argv[i], "r");
+        if (files[i - 1] == NULL) {
+            // end of file error
+            printf("Error while opening file!\n");
+            exit(1);
+        }
+    }
+}
+
+void printResults() {
+    for (int k = 0; k < filesSize; k++) {
+        printf("File name: %s\n", filenames[k]);
+        printf("Total number of words: %d\n", numberWordsResults[k]);
+        printf("Word length\n");
+
+        printf("   ");
+        for (int i = 1; i < maximumSizeWordResults[k] + 1; i++) {
+            printf("%6d", i);
+        }
+        printf("\n   ");
+        for (int i = 1; i < maximumSizeWordResults[k] + 1; i++) {
+            printf("%6d", wordSizeResults[k][i]);
+        }
+        printf("\n   ");
+        for (int i = 1; i < maximumSizeWordResults[k] + 1; i++) {
+            printf("%6.2f", ((float)wordSizeResults[k][i] * 100.0) /
+                                (float)numberWordsResults[k]);
+        }
+        for (int i = 0; i < maximumSizeWordResults[k] + 1; i++) {
+            printf("\n%2d ", i);
+            for (int j = 1; j < i; j++) {
+                printf("%6s", " ");
+            }
+            if (i == 0) {
+                for (int j = 1; j < maximumSizeWordResults[k] + 1; j++) {
+                    if (wordSizeResults[k][j] > 0) {
+                        printf("%6.1f", (vowelCountResults[k][i][j] * 100.0) /
+                                            (float)wordSizeResults[k][j]);
+                    } else {
+                        printf("%6.1f", 0.0);
+                    }
+                }
+            } else {
+                for (int j = i; j < maximumSizeWordResults[k] + 1; j++) {
+                    if (wordSizeResults[k][j] > 0) {
+                        printf("%6.1f", (vowelCountResults[k][i][j] * 100.0) /
+                                            (float)wordSizeResults[k][j]);
+                    } else {
+                        printf("%6.1f", 0.0);
+                    }
+                }
+            }
+        }
+        printf("\n\n");
+    }
+}
+
 int main(int argc, char** argv) {
     int rank, size;
 
@@ -152,60 +258,7 @@ int main(int argc, char** argv) {
             exit(1);
         }
 
-        filesSize = argc - 1;
-        // Allocate memory
-        if ((files = malloc(sizeof(FILE*) * (filesSize))) == NULL) {
-            perror("Error while allocating memory.\n");
-            exit(1);
-        }
-
-        if ((filenames = malloc(sizeof(char*) * (filesSize))) == NULL) {
-            perror("Error while allocating memory.\n");
-            exit(1);
-        }
-
-        wordSizeResults = malloc(sizeof(int*) * (filesSize));
-        vowelCountResults = malloc(sizeof(int*) * (filesSize));
-        maximumSizeWordResults = malloc(sizeof(int) * (filesSize));
-        numberWordsResults = malloc(sizeof(int) * (filesSize));
-        if (wordSizeResults == NULL || vowelCountResults == NULL ||
-            maximumSizeWordResults == NULL || numberWordsResults == NULL) {
-            perror("Error while allocating memory.\n");
-            exit(1);
-        }
-
-        // Process files given as input
-        for (int i = 0; i < filesSize; i++) {
-            maximumSizeWordResults[i] = 0;
-            numberWordsResults[i] = 0;
-            wordSizeResults[i] = malloc(sizeof(int) * (MAXSIZE));
-            vowelCountResults[i] = malloc(sizeof(int*) * (MAXSIZE));
-            if (wordSizeResults[i] == NULL || vowelCountResults[i] == NULL) {
-                perror("Error while allocating memory.\n");
-                exit(1);
-            }
-            for (int j = 0; j < MAXSIZE; j++) {
-                wordSizeResults[i][j] = 0;
-                if ((vowelCountResults[i][j] =
-                         malloc(sizeof(int) * (MAXSIZE))) == NULL) {
-                    perror("Error while allocating memory in.\n");
-                    exit(1);
-                }
-                for (int l = 0; l < MAXSIZE; l++) {
-                    vowelCountResults[i][j][l] = 0;
-                }
-            }
-        }
-
-        for (int i = 1; i < argc; i++) {
-            filenames[i - 1] = argv[i];
-            files[i - 1] = fopen(argv[i], "r");
-            if (files[i - 1] == NULL) {
-                // end of file error
-                printf("Error while opening file!\n");
-                exit(1);
-            }
-        }
+        initVariables(argc, argv);
 
         // t0 = ((double)clock()) / CLOCKS_PER_SEC;
         clock_gettime(CLOCK_REALTIME, &t0);
@@ -215,12 +268,9 @@ int main(int argc, char** argv) {
         int fileId = -1;
         bool continueProcess = true;
 
-        int recInt;
         while (continueProcess) {
             int workingWorkers = 0;
             for (int workerId = 1; workerId <= totalNumWorkers; workerId++) {
-                MPI_Recv(&recInt, 1, MPI_INT, workerId, 0, MPI_COMM_WORLD,
-                         MPI_STATUS_IGNORE);
                 continueProcess = getTextChunk(textChunk, &fileId);
 
                 if (continueProcess) {
@@ -277,55 +327,7 @@ int main(int argc, char** argv) {
             MPI_Send(&endSignal, 1, MPI_INT, workerId, 0, MPI_COMM_WORLD);
         }
 
-        // print
-
-        for (int k = 0; k < filesSize; k++) {
-            printf("File name: %s\n", filenames[k]);
-            printf("Total number of words: %d\n", numberWordsResults[k]);
-            printf("Word length\n");
-
-            printf("   ");
-            for (int i = 1; i < maximumSizeWordResults[k] + 1; i++) {
-                printf("%6d", i);
-            }
-            printf("\n   ");
-            for (int i = 1; i < maximumSizeWordResults[k] + 1; i++) {
-                printf("%6d", wordSizeResults[k][i]);
-            }
-            printf("\n   ");
-            for (int i = 1; i < maximumSizeWordResults[k] + 1; i++) {
-                printf("%6.2f", ((float)wordSizeResults[k][i] * 100.0) /
-                                    (float)numberWordsResults[k]);
-            }
-            for (int i = 0; i < maximumSizeWordResults[k] + 1; i++) {
-                printf("\n%2d ", i);
-                for (int j = 1; j < i; j++) {
-                    printf("%6s", " ");
-                }
-                if (i == 0) {
-                    for (int j = 1; j < maximumSizeWordResults[k] + 1; j++) {
-                        if (wordSizeResults[k][j] > 0) {
-                            printf("%6.1f",
-                                   (vowelCountResults[k][i][j] * 100.0) /
-                                       (float)wordSizeResults[k][j]);
-                        } else {
-                            printf("%6.1f", 0.0);
-                        }
-                    }
-                } else {
-                    for (int j = i; j < maximumSizeWordResults[k] + 1; j++) {
-                        if (wordSizeResults[k][j] > 0) {
-                            printf("%6.1f",
-                                   (vowelCountResults[k][i][j] * 100.0) /
-                                       (float)wordSizeResults[k][j]);
-                        } else {
-                            printf("%6.1f", 0.0);
-                        }
-                    }
-                }
-            }
-            printf("\n\n");
-        }
+        printResults();
 
         clock_gettime(CLOCK_REALTIME, &t1);
         double exec_time =
@@ -362,7 +364,6 @@ int main(int argc, char** argv) {
         }
 
         while (chunkSize != -1) {
-            MPI_Send(&chunkSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
             MPI_Recv(&fileId, 1, MPI_INT, 0, 0, MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
             if (fileId == -1) {

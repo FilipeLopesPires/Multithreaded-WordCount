@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 
         // Retrieval of filenames
 
-        //printf("Dispatcher: Retrieving\n");
+        printf("Dispatcher: Retrieving\n");
         char *fileNames[argc - optind];
         for (int i = optind; i < argc; i++) {
             fileNames[i - optind] = argv[i];
@@ -128,23 +128,23 @@ int main(int argc, char **argv) {
 
         int reqSignal;
         int signalMsgLen;
-        int resultsMsgLen;
-        char* signalMsg;
-        char* signalMsgCpy;
-        char* resultsMsg;
+        //int resultsMsgLen;
+        //char* signalMsg;
+        //char* signalMsgCpy;
+        //char* resultsMsg;
         int toBeIgnored[numworkers]; for(int i=0; i<numworkers; i++) { toBeIgnored[i] = -1; }
 
         struct signal signal;
         struct results results; 
         int i, j, n;
-        int control, ces;
-        char* curElemStr; 
+        //int control, ces;
+        //char* curElemStr; 
         while(stillExistsText) {
             for(i=1; i<numworkers; i++) {
-                //printf("Dispatcher: Waiting (%d)\n", i);
+                printf("Dispatcher: Waiting (%d)\n", i);
                 MPI_Recv(&reqSignal, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-                //printf("Dispatcher: Preparing\n");
+                printf("Dispatcher: Preparing\n");
                 //struct signal signal;
                 //struct results results; 
                 results.fileId = 0; results.tau = 0; results.value = 0.0; // these values are never used, they avoid warnings
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
                         currentFileIdx++;
                     }
                 }
-                //printf("Dispatcher: Sending\n");
+                printf("Dispatcher: Sending\n");
                 if (currentFileIdx >= filesSize) {
                     stillExistsText = false;
                     char* emptySignalMsg = "";
@@ -182,6 +182,7 @@ int main(int argc, char **argv) {
                     toBeIgnored[i] = i;
                 } else {
                     stillExistsText = true;
+                    /*
                     signalMsg = malloc(100 * signal.signalSize * sizeof(char));
                     sprintf(signalMsg, "%d;[[%f", signal.signalSize, signal.values[0][0]);
                     signalMsgCpy = malloc(100 * signal.signalSize * sizeof(char));
@@ -200,11 +201,22 @@ int main(int argc, char **argv) {
                     signalMsgLen = strlen(signalMsg) + 1;
                     MPI_Send(&signalMsgLen, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
                     MPI_Send(signalMsg, signalMsgLen, MPI_CHAR, i, 0, MPI_COMM_WORLD);
+                    */
+                    MPI_Send(&signal.signalSize, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+                    MPI_Send(signal.values[0], signal.signalSize, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+                    MPI_Send(signal.values[1], signal.signalSize, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
+                    MPI_Send(&signal.tau, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+
+                    /*
                     resultsMsg = malloc(100 * sizeof(char));
                     sprintf(resultsMsg, "%d;%d;%f", results.fileId, results.tau, results.value);
                     resultsMsgLen = strlen(resultsMsg) + 1;
                     MPI_Send(&resultsMsgLen, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
                     MPI_Send(resultsMsg, resultsMsgLen, MPI_CHAR, i, 0, MPI_COMM_WORLD);
+                    */
+                    MPI_Send(&results.fileId, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+                    MPI_Send(&results.tau, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+                    MPI_Send(&results.value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
                 }
             }
 
@@ -213,10 +225,11 @@ int main(int argc, char **argv) {
                 if(toBeIgnored[i]>0) {
                     continue;
                 }
+                /*
                 MPI_Recv(&resultsMsgLen, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 resultsMsg = malloc(resultsMsgLen * sizeof(char));
                 MPI_Recv(resultsMsg, resultsMsgLen, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                //printf("Dispatcher: Storing (%d)\n", i);
+                printf("Dispatcher: Storing (%d)\n", i);
                 control = 0; curElemStr = malloc(50 * sizeof(char)); ces = 0;
                 for(int j=0; j<resultsMsgLen; j++) {
                     if(resultsMsg[j]==';') {
@@ -236,8 +249,12 @@ int main(int argc, char **argv) {
                         ces++;
                     }
                 }
+                */
+                MPI_Recv(&results.fileId, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(&results.tau, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(&results.value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 globalResults[results.fileId][results.tau] = results.value;
-                printf("%f ",globalResults[results.fileId][results.tau]);
+                printf("%f \n",globalResults[results.fileId][results.tau]);
                 if(!stillExistsText) {
                     char* emptySignalMsg = "";
                     signalMsgLen = strlen(emptySignalMsg);
@@ -277,7 +294,7 @@ int main(int argc, char **argv) {
         free(files);
         free(globalResults);
         free(signalSizes);
-        //printf("Dispatcher: Closing\n");
+        printf("Dispatcher: Closing\n");
 
         clock_gettime(CLOCK_REALTIME, &t1);
         double exec_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / BILLION;
@@ -287,27 +304,28 @@ int main(int argc, char **argv) {
 
         int reqSignal = 1;
         int msgLen;
-        int resultsMsgLen;
-        char* signalMsg;
-        char* resultsMsg;
+        //int resultsMsgLen;
+        //char* signalMsg;
+        //char* resultsMsg;
 
         struct signal signal;
         struct results results;
-        int i, v, cvs, control, ces;
-        bool middle;
-        char* signalSizeStr;
-        char* curValStr;
-        char* curElemStr;
+        //int i, v, cvs, control, ces;
+        ///bool middle;
+        //char* signalSizeStr;
+        //char* curValStr;
+        //char* curElemStr;
         double curSum;
         int mod;
 
         // Receive signal
 
-        //printf("Worker %d: Requesting\n", rank);
+        printf("Worker %d: Requesting\n", rank);
         MPI_Send(&reqSignal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-        //printf("Worker %d: Waiting\n", rank);
+        printf("Worker %d: Waiting\n", rank);
         MPI_Recv(&msgLen, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         while(msgLen > 1) {
+            /*
             signalMsg = malloc(msgLen * sizeof(char));
             MPI_Recv(signalMsg, msgLen, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
@@ -351,8 +369,26 @@ int main(int argc, char **argv) {
             }
             char *ptr = signalMsg; ptr = ptr + i + 1;
             signal.tau = atoi(ptr);
+            */
+            signal.signalSize = msgLen;
+            double* values0;
+            if ((values0 = malloc(sizeof(double) * signal.signalSize)) == NULL) {
+                perror("Error while allocating memory.\n");
+                exit(1);
+            }
+            MPI_Recv(values0, signal.signalSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            double* values1;
+            if ((values1 = malloc(sizeof(double) * signal.signalSize)) == NULL) {
+                perror("Error while allocating memory.\n");
+                exit(1);
+            }
+            MPI_Recv(values1, signal.signalSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            signal.values[0] = values0;
+            signal.values[1] = values1;
+            MPI_Recv(&signal.tau, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             
             // Convert message to results struct
+            /*
             MPI_Recv(&msgLen, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             signalMsg = malloc(msgLen * sizeof(char));
             MPI_Recv(signalMsg, msgLen, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -376,31 +412,40 @@ int main(int argc, char **argv) {
                     ces++;
                 }
             }
+            */
+            MPI_Recv(&results.fileId, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&results.tau, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&results.value, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
             // Process signal
 
-            //printf("Worker %d: Processing\n", rank);
+            printf("Worker %d: Processing\n", rank);
             curSum = 0.0;
             for (int n = 0; n < signal.signalSize; n++) {
                 mod = (results.tau + n) % signal.signalSize;
                 curSum += signal.values[0][n] * signal.values[1][mod];
             }
             results.value = curSum;
-            //printf("Worker %d: Sending\n", rank);
+            printf("Worker %d: Sending\n", rank);
+            /*
             resultsMsg = malloc(100 * sizeof(char));
             sprintf(resultsMsg, "%d;%d;%f", results.fileId, results.tau, results.value);
             resultsMsgLen = strlen(resultsMsg) + 1;
             MPI_Send(&resultsMsgLen, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
             MPI_Send(resultsMsg, resultsMsgLen, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+            */
+            MPI_Send(&results.fileId, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+            MPI_Send(&results.tau, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+            MPI_Send(&results.value, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 
-            //printf("Worker %d: Requesting\n", rank);
+            printf("Worker %d: Requesting\n", rank);
             reqSignal = 1;
             MPI_Send(&reqSignal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
-            //printf("Worker %d: Waiting\n", rank);
+            printf("Worker %d: Waiting\n", rank);
             MPI_Recv(&msgLen, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         } 
-        //printf("Worker %d: Closing\n", rank);
+        printf("Worker %d: Closing\n", rank);
     }
     MPI_Finalize();
 

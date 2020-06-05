@@ -36,33 +36,14 @@
 /**
  *  \brief Main function called when the program is executed.
  *
- *  Main function of the 'signalCrossCorrelation' program responsible for
- * creating worker threads and managing the monitor for delivering the desired
- * results. The function receives the paths to the text files.
+ *  Main function of the 'signalCrossCorrelation' program responsible for creating an MPI session and managing it to achieve the desired results. 
+ *  The function receives the paths to the text files.
  *
  *  \param argc number of files passed to the program.
  *  \param argv paths to the signal files.
  *
  */
 int main(int argc, char **argv) {
-
-    // Validate program arguments
-
-    int opt;
-    bool compareEnabled = false;
-
-    while ((opt = getopt(argc, argv, "c")) != -1) {
-        switch (opt) {
-            case 'c':
-                compareEnabled = true;
-                break;
-        }
-    }
-
-    if ((argc - optind) < 1) {
-        printf("The program need at least one text file to parse!\n");
-        exit(1);
-    }
 
     // Prepare MPI
 
@@ -77,8 +58,25 @@ int main(int argc, char **argv) {
 
     if (rank == 0) {    // DISPATCHER
 
-        //bool areFilenamesPresented;
+        // Validate program arguments
 
+        int opt;
+        bool compareEnabled = false;
+
+        while ((opt = getopt(argc, argv, "c")) != -1) {
+            switch (opt) {
+                case 'c':
+                    compareEnabled = true;
+                    break;
+            }
+        }
+
+        if ((argc - optind) < 1) {
+            printf("The program need at least one text file to parse!\n");
+            exit(1);
+        }
+
+        //bool areFilenamesPresented;
         FILE** files;
         char** filenames;
         int filesSize;
@@ -93,7 +91,7 @@ int main(int argc, char **argv) {
 
         // Retrieval of filenames
 
-        printf("Dispatcher: Retrieving\n");
+        //printf("Dispatcher: Retrieving\n");
         char *fileNames[argc - optind];
         for (int i = optind; i < argc; i++) {
             fileNames[i - optind] = argv[i];
@@ -123,10 +121,11 @@ int main(int argc, char **argv) {
                 }
             }
         }
+        printf("Files presented.\n");
 
         // Process Worker Requests
 
-        int reqSignal;
+        //int reqSignal;
         int signalMsgLen;
         //int resultsMsgLen;
         //char* signalMsg;
@@ -141,10 +140,10 @@ int main(int argc, char **argv) {
         //char* curElemStr; 
         while(stillExistsText) {
             for(i=1; i<numworkers; i++) {
-                printf("Dispatcher: Waiting (%d)\n", i);
-                MPI_Recv(&reqSignal, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                //printf("Dispatcher: Waiting (%d)\n", i);
+                //MPI_Recv(&reqSignal, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-                printf("Dispatcher: Preparing\n");
+                //printf("Dispatcher: Preparing\n");
                 //struct signal signal;
                 //struct results results; 
                 results.fileId = 0; results.tau = 0; results.value = 0.0; // these values are never used, they avoid warnings
@@ -172,7 +171,7 @@ int main(int argc, char **argv) {
                         currentFileIdx++;
                     }
                 }
-                printf("Dispatcher: Sending\n");
+                //printf("Dispatcher: Sending\n");
                 if (currentFileIdx >= filesSize) {
                     stillExistsText = false;
                     char* emptySignalMsg = "";
@@ -254,7 +253,7 @@ int main(int argc, char **argv) {
                 MPI_Recv(&results.tau, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 MPI_Recv(&results.value, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 globalResults[results.fileId][results.tau] = results.value;
-                printf("%f \n",globalResults[results.fileId][results.tau]);
+                //printf("%f \n",globalResults[results.fileId][results.tau]);
                 if(!stillExistsText) {
                     char* emptySignalMsg = "";
                     signalMsgLen = strlen(emptySignalMsg);
@@ -270,31 +269,30 @@ int main(int argc, char **argv) {
             int numErrors = 0;
             if (compareEnabled) {
                 printf("Comparing one by one:\n");
-            }
-            for (j = 0; j < signalSizes[i]; j++) {
-                if (!compareEnabled) {
+                /*
+                for (j = 0; j < signalSizes[i]; j++) {
+                    fread(&curSig, 8, 1, files[i]);
+                    if (curSig == globalResults[i][j]) {
+                        printf("1");
+                    } else {
+                        numErrors++;
+                        printf("0");
+                        printf(" %d ", j);
+                    }
+                }
+                */
+                printf("\nNum. Errors Found: %d\n", numErrors);
+            } else {
+                for (j = 0; j < signalSizes[i]; j++) {
                     fwrite(&globalResults[i][j], 8, 1, files[i]);
                 }
-                // else {
-                //     fread(&curSig, 8, 1, files[i]);
-                //     if (curSig == results[i][j]) {
-                //         printf("1");
-                //     } else {
-                //         numErrors++;
-                //         printf("0");
-                //         printf(" %d ", j);
-                //     }
-                // }
-            }
-            if (compareEnabled) {
-                printf("\nNum. Errors Found: %d\n", numErrors);
             }
         }
 
         free(files);
         free(globalResults);
         free(signalSizes);
-        printf("Dispatcher: Closing\n");
+        //printf("Dispatcher: Closing\n");
 
         clock_gettime(CLOCK_REALTIME, &t1);
         double exec_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / BILLION;
@@ -302,7 +300,7 @@ int main(int argc, char **argv) {
 
     } else {    // WORKERS
 
-        int reqSignal = 1;
+        //int reqSignal = 1;
         int msgLen;
         //int resultsMsgLen;
         //char* signalMsg;
@@ -320,9 +318,9 @@ int main(int argc, char **argv) {
 
         // Receive signal
 
-        printf("Worker %d: Requesting\n", rank);
-        MPI_Send(&reqSignal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-        printf("Worker %d: Waiting\n", rank);
+        //printf("Worker %d: Requesting\n", rank);
+        //MPI_Send(&reqSignal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        //printf("Worker %d: Waiting\n", rank);
         MPI_Recv(&msgLen, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         while(msgLen > 1) {
             /*
@@ -419,14 +417,14 @@ int main(int argc, char **argv) {
 
             // Process signal
 
-            printf("Worker %d: Processing\n", rank);
+            //printf("Worker %d: Processing\n", rank);
             curSum = 0.0;
             for (int n = 0; n < signal.signalSize; n++) {
                 mod = (results.tau + n) % signal.signalSize;
                 curSum += signal.values[0][n] * signal.values[1][mod];
             }
             results.value = curSum;
-            printf("Worker %d: Sending\n", rank);
+            //printf("Worker %d: Sending\n", rank);
             /*
             resultsMsg = malloc(100 * sizeof(char));
             sprintf(resultsMsg, "%d;%d;%f", results.fileId, results.tau, results.value);
@@ -438,69 +436,18 @@ int main(int argc, char **argv) {
             MPI_Send(&results.tau, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
             MPI_Send(&results.value, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 
-            printf("Worker %d: Requesting\n", rank);
-            reqSignal = 1;
-            MPI_Send(&reqSignal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+            //printf("Worker %d: Requesting\n", rank);
+            //reqSignal = 1;
+            //MPI_Send(&reqSignal, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
-            printf("Worker %d: Waiting\n", rank);
+            //printf("Worker %d: Waiting\n", rank);
             MPI_Recv(&msgLen, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         } 
-        printf("Worker %d: Closing\n", rank);
+        //printf("Worker %d: Closing\n", rank);
+        printf("Worker, with id %d, has successfully terminated.\n", rank);
     }
     MPI_Finalize();
 
     exit(EXIT_SUCCESS);
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    // Report post task completion (by workers)
-    /*
-    for (i = 0; i < NUMWORKERS; i++) {
-        if (pthread_join(workerThreadID[i], (void *)&status_p) != 0) {
-            perror("Error on waiting for thread worker.\n");
-            exit(EXIT_FAILURE);
-        }
-        printf("thread worker, with id %u, has terminated: ", i);
-        printf("its status was %d\n", *status_p);
-    }
-    writeOrPrintResults(compareEnabled);
-    destroy();
-    */
-
 }
-
-
-/*
-static void *worker(void *par) {
-    // Instantiate and initialize thread variables
-
-    int id = *((int *)par);  // worker ID
-    struct signal signal;
-    struct results results;
-    int mod;
-    double curSum;
-    int count = 0;
-
-    // Calculate cross correlation
-    bool run = getSignalAndTau(id, &signal, &results);
-    while (run) {
-        curSum = 0.0;
-        count++;
-
-        for (int n = 0; n < signal.signalSize; n++) {
-            mod = (results.tau + n) % signal.signalSize;
-            curSum += signal.values[0][n] * signal.values[1][mod];
-        }
-
-        // Save processing results for the current tau value
-
-        results.value = curSum;
-        savePartialResults(id, &results);
-        run = getSignalAndTau(id, &signal, &results);
-    }
-
-    statusWorker[id] = EXIT_SUCCESS;
-    pthread_exit(&statusWorker[id]);
-}
-*/

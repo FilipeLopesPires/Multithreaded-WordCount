@@ -191,6 +191,7 @@ void initVariables(int argc, char** argv) {
             exit(1);
         }
     }
+    printf("Files presented.\n");
 }
 
 void printResults() {
@@ -241,6 +242,16 @@ void printResults() {
     }
 }
 
+/**
+ *  \brief Main function called when the program is executed.
+ *
+ *  Main function of the 'wordCount' program responsible for creating an MPI session and managing it to achieve the desired results. 
+ *  The function receives the paths to the text files.
+ *
+ *  \param argc number of files passed to the program.
+ *  \param argv paths to the signal files.
+ *
+ */
 int main(int argc, char** argv) {
     int rank, size;
 
@@ -334,7 +345,6 @@ int main(int argc, char** argv) {
             (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / BILLION;
         printf("\nElapsed time = %.6f s\n", exec_time);
 
-        exit(EXIT_SUCCESS);
     } else {
         int chunkSize = 0;
         char* textChunk;
@@ -500,9 +510,12 @@ int main(int argc, char** argv) {
             maxWordSize = 0;
             maxVowelCount = 0;
         }
+        printf("Worker, with id %d, has successfully terminated.\n", rank);
     }
 
     MPI_Finalize();
 
-    return 0;
+    exit(EXIT_SUCCESS);
+
+    //return 0;
 }

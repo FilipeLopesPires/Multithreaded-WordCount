@@ -168,6 +168,7 @@ bool getTextChunk(int workerId, char* textChunk,
             }
         }
     }
+
     controlInfo.fileId = currentFileIdx;
     if (strlen(textChunk) <= 0) {
         stillExistsText = false;

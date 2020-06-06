@@ -1,23 +1,28 @@
 /**
  *  \file wordCount.c (implementation file)
  *
- *  \brief Multi-threaded implementation of the program that computes the occurring frequency of word lengths and the number of vowels in each word for texts given as input.
+ *  \brief Multi-threaded implementation of the program that computes the
+ * occurring frequency of word lengths and the number of vowels in each word for
+ * texts given as input.
  *
- *  The program 'wordCount' reads in succession several text files text#.txt and prints a listing of the occurring frequency of word lengths and the number of vowels in each word for each of the supplied texts.
- *  In this implementation, threads synchronization is based on monitors. Both threads and the monitor are implemented using the pthread library which enables the creation of a monitor of the Lampson / Redell type.
+ *  The program 'wordCount' reads in succession several text files text#.txt and
+ * prints a listing of the occurring frequency of word lengths and the number of
+ * vowels in each word for each of the supplied texts. In this implementation,
+ * threads synchronization is based on monitors. Both threads and the monitor
+ * are implemented using the pthread library which enables the creation of a
+ * monitor of the Lampson / Redell type.
  *
  *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
  */
 
 #include <dirent.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-
-#include <pthread.h>
 //#include <stdbool.h>
 #include <math.h>
 #include <time.h>
@@ -53,18 +58,18 @@ char vowels[48][MAXCHARSIZE] = {
     "Ä", "É", "È", "Ẽ", "Ê", "Ë", "ó", "ò", "õ", "ô", "ö", "Ó",
     "Ò", "Õ", "Ô", "Ö", "í", "ì", "Í", "Ì", "ú", "ù", "Ú", "Ù"};
 
-/** 
+/**
  *  \brief Main function called when the program is executed.
- * 
- *  Main function of the 'wordCount' program responsible for creating worker threads and managing the monitor for delivering the desired results.
- *  The function receives the paths to the text files.
- * 
+ *
+ *  Main function of the 'wordCount' program responsible for creating worker
+ * threads and managing the monitor for delivering the desired results. The
+ * function receives the paths to the text files.
+ *
  *  \param argc number of files passed to the program.
  *  \param argv paths to the text files.
- * 
+ *
  */
 int main(int argc, char **argv) {
-
     // Validate number of arguments passed to the program
 
     if (argc <= 1) {
@@ -87,7 +92,7 @@ int main(int argc, char **argv) {
     int i;
 
     /** \brief time limits (for execution time calculation). */
-    struct timespec t0, t1; //double t0, t1;
+    struct timespec t0, t1;  // double t0, t1;
 
     // Initialization of thread IDs
 
@@ -95,7 +100,7 @@ int main(int argc, char **argv) {
         workerID[i] = i;
     }
     srandom((unsigned int)getpid());
-    //t0 = ((double)clock()) / CLOCKS_PER_SEC;
+    // t0 = ((double)clock()) / CLOCKS_PER_SEC;
     clock_gettime(CLOCK_REALTIME, &t0);
 
     // Retrieval of filenames
@@ -109,7 +114,8 @@ int main(int argc, char **argv) {
     // Generation of worker threads
 
     for (i = 0; i < NUMWORKERS; i++) {
-        if (pthread_create(&workerThreadID[i], NULL, worker, &workerID[i]) != 0) {
+        if (pthread_create(&workerThreadID[i], NULL, worker, &workerID[i]) !=
+            0) {
             perror("Error on creating thread worker.\n");
             exit(EXIT_FAILURE);
         }
@@ -131,11 +137,12 @@ int main(int argc, char **argv) {
 
     // Execution of time calculation
 
-    //t1 = ((double)clock()) / CLOCKS_PER_SEC;
-    //printf("\nElapsed time = %.6f s\n", t1 - t0);
+    // t1 = ((double)clock()) / CLOCKS_PER_SEC;
+    // printf("\nElapsed time = %.6f s\n", t1 - t0);
 
     clock_gettime(CLOCK_REALTIME, &t1);
-    double exec_time = (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / BILLION;
+    double exec_time =
+        (t1.tv_sec - t0.tv_sec) + (t1.tv_nsec - t0.tv_nsec) / BILLION;
     printf("\nElapsed time = %.6f s\n", exec_time);
 
     exit(EXIT_SUCCESS);
@@ -150,13 +157,13 @@ int main(int argc, char **argv) {
  */
 
 static void *worker(void *par) {
-
     // Instantiate thread variables
 
     /** \brief worker ID. */
     int id;
 
-    // char stringBuffer[MAXSIZE];             // buffer containing the current word
+    // char stringBuffer[MAXSIZE];             // buffer containing the current
+    // word
 
     /** \brief number of characters in current word. */
     int stringSize;
@@ -170,28 +177,37 @@ static void *worker(void *par) {
     /** \brief buffer for complex character construction. */
     char completeSymbol[MAXCHARSIZE];
 
-    // int wordCount[MAXSIZE];                  // array containing the number of words found whose size is equal to the respective index
-    // // int vowelsCount[MAXSIZE][MAXSIZE];      // 2D array containing the number of words found whose number of vowels and word size are equal to x and y
-    // int **vowelsCount;                       // 2D array containing the number of words found whose number of vowels and word size are equal to x and y
-    // int localMaxWordSize;                    // largest word found in the text chunk
-    // int localMaxVocalCount;                  // largest number of vowels found in a word from the text chunk
+    // int wordCount[MAXSIZE];                  // array containing the number
+    // of words found whose size is equal to the respective index
+    // // int vowelsCount[MAXSIZE][MAXSIZE];      // 2D array containing the
+    // number of words found whose number of vowels and word size are equal to x
+    // and y int **vowelsCount;                       // 2D array containing the
+    // number of words found whose number of vowels and word size are equal to x
+    // and y int localMaxWordSize;                    // largest word found in
+    // the text chunk int localMaxVocalCount;                  // largest number
+    // of vowels found in a word from the text chunk
 
-    /** \brief auxiliar variable to count the number of ones in the most significant bits of the current character. */
+    /** \brief auxiliar variable to count the number of ones in the most
+     * significant bits of the current character. */
     int ones;
 
-    /** \brief auxiliar variable to construct the complete symbol (used for those who use more than 1 byte). */
+    /** \brief auxiliar variable to construct the complete symbol (used for
+     * those who use more than 1 byte). */
     char nchar;
 
-    /** \brief auxiliar variable to determine whether the program should update 'numVowels' and 'stringSize' or not. */
+    /** \brief auxiliar variable to determine whether the program should update
+     * 'numVowels' and 'stringSize' or not. */
     int control;
 
-    /** \brief auxiliar variable to determine whether the program should update 'stringSize' and 'stringBuffer' or not. */
+    /** \brief auxiliar variable to determine whether the program should update
+     * 'stringSize' and 'stringBuffer' or not. */
     bool increment;
 
     /** \brief auxiliar variables for local loops. */
     int h, i, j;
 
-    /** \brief structure containing control variables for the program (wordSize[], vowelCount[][], maxWordSize, maxVowelCount, fileId). */
+    /** \brief structure containing control variables for the program
+     * (wordSize[], vowelCount[][], maxWordSize, maxVowelCount, fileId). */
     struct controlInfo controlInfo;
 
     // Initialize thread variables
@@ -266,7 +282,8 @@ static void *worker(void *par) {
                 continue;
             }
 
-            // Increment word size and add character to current word (if applicable)
+            // Increment word size and add character to current word (if
+            // applicable)
 
             for (i = 0; i < sizeof(mergers) / sizeof(mergers[0]); i++) {
                 if (strcmp(completeSymbol, mergers[i]) == 0) {

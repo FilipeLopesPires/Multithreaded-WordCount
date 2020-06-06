@@ -245,8 +245,9 @@ void printResults() {
 /**
  *  \brief Main function called when the program is executed.
  *
- *  Main function of the 'wordCount' program responsible for creating an MPI session and managing it to achieve the desired results. 
- *  The function receives the paths to the text files.
+ *  Main function of the 'wordCount' program responsible for creating an MPI
+ * session and managing it to achieve the desired results. The function receives
+ * the paths to the text files.
  *
  *  \param argc number of files passed to the program.
  *  \param argv paths to the signal files.
@@ -331,6 +332,9 @@ int main(int argc, char** argv) {
                         vowelCountResults[fileId][i][j] += vowelCounts[j];
                     }
                 }
+
+                free(wordSizes);
+                free(vowelCounts);
             }
         }
         int endSignal = -1;
@@ -483,6 +487,8 @@ int main(int argc, char** argv) {
             maxWordSize = maxWordSize + 1;
             maxVowelCount = maxVowelCount + 1;
 
+            free(textChunk);
+
             // Save chunk processing results
             MPI_Send(&fileId, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
             MPI_Send(&maxWordSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
@@ -510,12 +516,12 @@ int main(int argc, char** argv) {
             maxWordSize = 0;
             maxVowelCount = 0;
         }
-        printf("Worker, with id %d, has successfully terminated.\n", rank);
+        // printf("Worker, with id %d, has successfully terminated.\n", rank);
     }
 
     MPI_Finalize();
 
     exit(EXIT_SUCCESS);
 
-    //return 0;
+    // return 0;
 }

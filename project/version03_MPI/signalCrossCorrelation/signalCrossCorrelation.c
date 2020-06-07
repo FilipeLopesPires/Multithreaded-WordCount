@@ -30,6 +30,8 @@
 
 #define BILLION 1000000000.0
 
+#define DEBUGGING true
+
 /**
  *  \brief Main function called when the program is executed.
  *
@@ -44,11 +46,19 @@
 int main(int argc, char** argv) {
     // Prepare MPI
 
-    int rank, numworkers;
+    int rank, size;
     // int completed = 0;
     MPI_Init(&argc, &argv);
-    MPI_Comm_size(MPI_COMM_WORLD, &numworkers);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int totalNumWorkers = size-1;
+
+    // Validate number of workers
+    if(totalNumWorkers<1) {
+        printf("The program needs at least one worker!\n");
+        exit(1);
+    }
 
     struct timespec t0, t1;  // time variables to calculate execution time
     clock_gettime(CLOCK_REALTIME, &t0);
@@ -88,7 +98,9 @@ int main(int argc, char** argv) {
 
         // Retrieval of filenames
 
-        // printf("Dispatcher: Retrieving\n");
+        if(DEBUGGING) {
+            printf("Dispatcher: Retrieving\n");
+        }
         char* fileNames[argc - optind];
         for (int i = optind; i < argc; i++) {
             fileNames[i - optind] = argv[i];
@@ -140,7 +152,8 @@ int main(int argc, char** argv) {
         double receivedValue;
 
         while (stillExistsText) {
-            for (i = 1; i < numworkers; i++) {
+            int workingWorkers = 0;
+            for (i = 1; i < totalNumWorkers+1; i++) { // i == worker id
                 if (currentFileIdx < filesSize) {
                     if (currentTau == -1) {
                         for (n = 0; n < 2; n++) {
@@ -167,7 +180,11 @@ int main(int argc, char** argv) {
                     }
 
                     stillExistsText = true;
+                    workingWorkers++;
 
+                    if(DEBUGGING) {
+                        printf("Dispatcher: Sending\n");
+                    }
                     MPI_Send(&currentFileIdx, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
                     MPI_Send(&signalSizes[currentFileIdx], 1, MPI_INT, i, 0,
                              MPI_COMM_WORLD);
@@ -186,13 +203,15 @@ int main(int argc, char** argv) {
                 break;
             }
 
+            if(DEBUGGING) {
+                printf("Dispatcher: Receiving & Storing\n");
+            }
             // Store partial results
-            for (i = 1; i < numworkers; i++) {
+            for (i = 1; i < workingWorkers+1; i++) {
                 MPI_Recv(&receivedFileId, 1, MPI_INT, i, 0, MPI_COMM_WORLD,
                          MPI_STATUS_IGNORE);
                 MPI_Recv(&receivedTau, 1, MPI_INT, i, 0, MPI_COMM_WORLD,
                          MPI_STATUS_IGNORE);
-
                 MPI_Recv(&receivedValue, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
                          MPI_STATUS_IGNORE);
                 globalResults[receivedFileId][receivedTau] = receivedValue;
@@ -200,8 +219,11 @@ int main(int argc, char** argv) {
             }
         }
 
+        if(DEBUGGING) {
+            printf("Dispatcher: Ending\n");
+        }
         int endSignal = -1;
-        for (int workerId = 1; workerId < numworkers; workerId++) {
+        for (int workerId = 1; workerId < totalNumWorkers+1; workerId++) {
             MPI_Send(&endSignal, 1, MPI_INT, workerId, 0, MPI_COMM_WORLD);
         }
 
@@ -249,9 +271,15 @@ int main(int argc, char** argv) {
         // Receive signal
 
         while (msgLen > 0) {
+            if(DEBUGGING) {
+                printf("Worker %d: Receiving\n", rank);
+            }
             MPI_Recv(&fileId, 1, MPI_INT, 0, 0, MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
             if (fileId == -1) {
+                if(DEBUGGING) {
+                    printf("Worker %d: Ending\n", rank);
+                }
                 break;
             }
 
@@ -273,7 +301,9 @@ int main(int argc, char** argv) {
             MPI_Recv(&tau, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             // Process signal
 
-            // printf("Worker %d: Processing\n", rank);
+            if(DEBUGGING) {
+                printf("Worker %d: Processing\n", rank);
+            }
             curSum = 0.0;
             for (int n = 0; n < msgLen; n++) {
                 mod = (tau + n) % msgLen;

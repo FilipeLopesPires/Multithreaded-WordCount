@@ -262,11 +262,17 @@ int main(int argc, char** argv) {
 
     totalNumWorkers = size - 1;
 
+    // Validate number of workers
+    if(totalNumWorkers<1) {
+        printf("The program needs at least one worker!\n");
+        exit(1);
+    }
+
     if (rank == 0) {
         srandom((unsigned int)getpid());
         // Validate number of arguments passed to the program
         if (argc <= 1) {
-            printf("The program need at least one text file to parse!\n");
+            printf("The program needs at least one text file to parse!\n");
             exit(1);
         }
 

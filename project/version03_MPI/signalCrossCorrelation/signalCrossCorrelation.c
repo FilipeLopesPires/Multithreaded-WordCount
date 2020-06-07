@@ -54,6 +54,12 @@ int main(int argc, char** argv) {
 
     int totalNumWorkers = size-1;
 
+    // Validate number of workers
+    if(totalNumWorkers<1) {
+        printf("The program needs at least one worker!\n");
+        exit(1);
+    }
+
     struct timespec t0, t1;  // time variables to calculate execution time
     clock_gettime(CLOCK_REALTIME, &t0);
 

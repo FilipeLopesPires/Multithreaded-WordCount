@@ -1,0 +1,11 @@
+
+Multithreading:
+
+gcc -Wall -o <filename> <filename>.c <otherfilename>.c -lpthread
+./<filename> ../../../datasets/<foldername>/<filename>.txt
+
+
+MPI:
+
+mpicc -Wall -o <filename> <filename>.c
+mpiexec -n X <filename> ../../../datasets/<foldername>/<filename>.txt

@@ -283,6 +283,8 @@ int main(int argc, char** argv) {
         while (continueProcess) {
             int workingWorkers = 0;
             for (int workerId = 1; workerId <= totalNumWorkers; workerId++) {
+                strcpy(textChunk, "");
+                fileId = -1;
                 continueProcess = getTextChunk(textChunk, &fileId);
 
                 if (continueProcess) {
@@ -294,9 +296,6 @@ int main(int argc, char** argv) {
                     MPI_Send(textChunk, chunkSize, MPI_CHAR, workerId, 0,
                              MPI_COMM_WORLD);
                 }
-
-                strcpy(textChunk, "");
-                fileId = -1;
             }
             for (int workerId = 1; workerId <= workingWorkers; workerId++) {
                 int* wordSizes;
@@ -306,14 +305,14 @@ int main(int argc, char** argv) {
                          MPI_STATUS_IGNORE);
                 MPI_Recv(&maxVowelCount, 1, MPI_INT, workerId, 0,
                          MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                if ((wordSizes = malloc(sizeof(int) * maxWordSize)) == NULL) {
+                if ((wordSizes = calloc(maxWordSize, sizeof(int))) == NULL) {
                     perror("Error while allocating memory.\n");
                     exit(1);
                 }
                 MPI_Recv(wordSizes, maxWordSize, MPI_INT, workerId, 0,
                          MPI_COMM_WORLD, MPI_STATUS_IGNORE);
                 int* vowelCounts;
-                if ((vowelCounts = malloc(sizeof(int) * maxWordSize)) == NULL) {
+                if ((vowelCounts = calloc(maxWordSize, sizeof(int))) == NULL) {
                     perror("Error while allocating memory.\n");
                     exit(1);
                 }
@@ -368,12 +367,9 @@ int main(int argc, char** argv) {
         // Process files given as input
         for (int j = 0; j < MAXSIZE; j++) {
             wordSize[j] = 0;
-            if ((vowelCount[j] = malloc(sizeof(int) * (MAXSIZE))) == NULL) {
+            if ((vowelCount[j] = calloc(MAXSIZE, sizeof(int))) == NULL) {
                 perror("Error while allocating memory in.\n");
                 exit(1);
-            }
-            for (int l = 0; l < MAXSIZE; l++) {
-                vowelCount[j][l] = 0;
             }
         }
 
@@ -386,13 +382,15 @@ int main(int argc, char** argv) {
             MPI_Recv(&chunkSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
 
-            if ((textChunk = malloc(chunkSize * sizeof(char))) == NULL) {
+            if ((textChunk = calloc(chunkSize + 1, sizeof(char))) == NULL) {
                 perror("Error while allocating memory.\n");
                 exit(1);
             }
-
+            strcpy(textChunk, "");
             MPI_Recv(textChunk, chunkSize, MPI_CHAR, 0, 0, MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
+
+            textChunk[chunkSize] = '\0';
             // process text chunk
             for (int h = 0; h < strlen(textChunk); h++) {
                 symbol = textChunk[h];
@@ -425,13 +423,13 @@ int main(int argc, char** argv) {
                 for (int i = 0; i < sizeof(delimiters) / sizeof(delimiters[0]);
                      i++) {
                     if (strcmp(completeSymbol, delimiters[i]) == 0) {
-                        control = 1;
                         if (stringSize > 0) {
                             wordSize[stringSize]++;
                             vowelCount[numVowels][stringSize]++;
-                            numVowels = 0;
-                            stringSize = 0;
                         }
+                        control = 1;
+                        numVowels = 0;
+                        stringSize = 0;
                         break;
                     }
                 }

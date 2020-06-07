@@ -1,9 +1,12 @@
 /**
  *  \file wordCount.c (implementation file)
  *
- *  \brief Program that computes the occurring frequency of word lengths and the number of vowels in each word for texts given as input.
+ *  \brief Program that computes the occurring frequency of word lengths and the
+ * number of vowels in each word for texts given as input.
  *
- *  The program 'wordCount' reads in succession several text files text#.txt and prints a listing of the occurring frequency of word lengths and the number of vowels in each word for each of the supplied texts.
+ *  The program 'wordCount' reads in succession several text files text#.txt and
+ * prints a listing of the occurring frequency of word lengths and the number of
+ * vowels in each word for each of the supplied texts.
  *
  *  \author Filipe Pires (85122) and João Alegria (85048) - March 2020
  */
@@ -24,21 +27,21 @@
 /** \brief maximum size (number of bytes) possible for a character. */
 #define MAXCHARSIZE 6
 
-/** 
+/**
  *  \brief Main function called when the program is executed.
- * 
+ *
  *  Main function of the 'wordCount' program containing all of its logic.
  *  The function receives the paths to the text files.
- * 
+ *
  *  \param argc number of files passed to the program.
  *  \param argv paths to the text files.
- * 
+ *
  */
 int main(int argc, char **argv) {
-
     // Declare useful variables
 
-    /** \brief array containing all the characters defined as word delimiters. */
+    /** \brief array containing all the characters defined as word delimiters.
+     */
     char delimeters[25][MAXCHARSIZE] = {
         " ", "-", "–", "—",  ".",  ",",  ":",  ";", "(", ")", "[", "]", "{",
         "}", "?", "!", "\n", "\t", "\r", "\"", "“", "”", "«", "»", "…"};
@@ -64,20 +67,24 @@ int main(int argc, char **argv) {
 
     /** \brief buffer containing the current word. */
     char stringBuffer[MAXSIZE] = "";
-    
+
     /** \brief auxiliar variables for local loops. */
     int i, j;
-    
-    /** \brief auxiliar variable to count the number of ones in the most significant bits of the current character. */
+
+    /** \brief auxiliar variable to count the number of ones in the most
+     * significant bits of the current character. */
     int ones;
-    
-    /** \brief auxiliar variable to construct the complete symbol (used for those who use more than 1 byte). */
+
+    /** \brief auxiliar variable to construct the complete symbol (used for
+     * those who use more than 1 byte). */
     char nchar;
-    
-    /** \brief auxiliar variable to determine whether the program should update 'numVowels' and 'stringSize' or not. */
+
+    /** \brief auxiliar variable to determine whether the program should update
+     * 'numVowels' and 'stringSize' or not. */
     int control;
-    
-    /** \brief auxiliar variable to determine whether the program should update 'stringSize' and 'stringBuffer' or not. */
+
+    /** \brief auxiliar variable to determine whether the program should update
+     * 'stringSize' and 'stringBuffer' or not. */
     bool increment;
 
     // Validate program arguments
@@ -87,7 +94,8 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    // Process all files passed as arguments and compute the occurring frequency of word lengths and the number of vowels in each word
+    // Process all files passed as arguments and compute the occurring frequency
+    // of word lengths and the number of vowels in each word
 
     for (int fileIndex = 1; fileIndex < argc; fileIndex++) {
         file = fopen(argv[fileIndex], "r");
@@ -96,7 +104,6 @@ int main(int argc, char **argv) {
             printf("Error while opening file!");
             exit(1);
         } else {
-
             // Declare and initialize variables dedicated to the current file
 
             /** \brief size of the largest word found. */
@@ -111,10 +118,12 @@ int main(int argc, char **argv) {
             /** \brief buffer for complex character construction. */
             char completeSymbol[MAXCHARSIZE];
 
-            /** \brief array containing the number of words found whose size is equal to the respective index. */
+            /** \brief array containing the number of words found whose size is
+             * equal to the respective index. */
             int wordCount[MAXSIZE];
 
-            /** \brief 2D array containing the number of words found whose number of vowels and word size are equal to x and y. */
+            /** \brief 2D array containing the number of words found whose
+             * number of vowels and word size are equal to x and y. */
             int vowelsCount[MAXSIZE][MAXSIZE];
 
             for (i = 0; i < MAXSIZE; i++) {
@@ -142,7 +151,8 @@ int main(int argc, char **argv) {
                     ones++;
                 }
 
-                // Build the complete character (if it consists of more than 1 byte)
+                // Build the complete character (if it consists of more than 1
+                // byte)
                 strncat(completeSymbol, &symbol, 1);
                 for (i = 1; i < ones; i++) {
                     nchar = getc(file);
@@ -150,7 +160,8 @@ int main(int argc, char **argv) {
                 }
 
                 // Check if character is a delimiter
-                for (i = 0; i < sizeof(delimeters) / sizeof(delimeters[0]); i++) {
+                for (i = 0; i < sizeof(delimeters) / sizeof(delimeters[0]);
+                     i++) {
                     if (strcmp(completeSymbol, delimeters[i]) == 0) {
                         control = 1;
                         if (strlen(stringBuffer) > 0) {
@@ -226,7 +237,8 @@ int main(int argc, char **argv) {
             }
             printf("\n   ");
             for (i = 1; i < largestWordSize + 1; i++) {
-                printf("%6.2f", ((float)wordCount[i] * 100.0) / (float)totalNumberOfWords);
+                printf("%6.2f", ((float)wordCount[i] * 100.0) /
+                                    (float)totalNumberOfWords);
             }
             for (i = 0; i < largestWordSize + 1; i++) {
                 printf("\n%2d ", i);
@@ -236,7 +248,8 @@ int main(int argc, char **argv) {
                 if (i == 0) {
                     for (int j = 1; j < largestWordSize + 1; j++) {
                         if (wordCount[j] > 0) {
-                            printf("%6.1f", (vowelsCount[i][j] * 100.0) / (float)wordCount[j]);
+                            printf("%6.1f", (vowelsCount[i][j] * 100.0) /
+                                                (float)wordCount[j]);
                         } else {
                             printf("%6.1f", 0.0);
                         }
@@ -244,7 +257,8 @@ int main(int argc, char **argv) {
                 } else {
                     for (int j = i; j < largestWordSize + 1; j++) {
                         if (wordCount[j] > 0) {
-                            printf("%6.1f", (vowelsCount[i][j] * 100.0) / (float)wordCount[j]);
+                            printf("%6.1f", (vowelsCount[i][j] * 100.0) /
+                                                (float)wordCount[j]);
                         } else {
                             printf("%6.1f", 0.0);
                         }

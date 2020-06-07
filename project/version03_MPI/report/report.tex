@@ -50,7 +50,7 @@
 		\item The previous central entity(monitor) was translated to a dispatcher that is responsible for the same functionalities and is implemented in a predefined process created by the MPI platform.
 		\item The dispatcher is responsible for keeping track of files to process, provide data chunk when requested, stored partial results and print final results.
 		\item The previous thread workers are now implemented as process supported by the MPI platform.
-		\item There logic keeps the same, request a data chunk, processing it and sending the results to the collecting entity.
+		\item There logic keeps the same, but now they wait for a data chunk to process, sending the obtained results to the dispatcher.
 	\end{itemize}
 \end{frame}
 
@@ -110,9 +110,9 @@
 				\multicolumn{2}{|l|}{\multirow{3}{*}{}}                          & \multicolumn{8}{l|}{Average Execution Time (s)}                                                                                                   \\ \cline{3-10}
 				\multicolumn{2}{|l|}{}                                           & \multicolumn{4}{l|}{Problem 1}                  & \multicolumn{4}{l|}{Problem 2}                                                                  \\ \cline{3-10}
 				\multicolumn{2}{|l|}{}                                           & text1                                           & text2                          & text3 & text4 & sigVal1 & sigVal2 & sigVal3 & sigVal4          \\ \hline
-				\multicolumn{1}{|c|}{\multirow{3}{*}{\begin{tabular}[c]{@{}c@{}}\# of\\ Threads\end{tabular}}} & 1                                               & 0.007                          & 0.032 & 0.014 & 0.033   & 0.010   & 0.089   & 1.282   & 20.155 \\ \cline{2-10}
-				\multicolumn{1}{|c|}{}                                           & 2                                               & 0.005                          & 0.021 & 0.011 & 0.018   & 0.008   & 0.051   & 0.675   & 10.543 \\ \cline{2-10}
-				\multicolumn{1}{|c|}{}                                           & 4                                               & 0.004                          & 0.018 & 0.009 & 0.015   & 0.004   & 0.033   & 0.394   & 5.981  \\ \hline
+				\multicolumn{1}{|c|}{\multirow{3}{*}{\begin{tabular}[c]{@{}c@{}}\# of\\ Threads\end{tabular}}} & 1                                               & 0.004                          & 0.038 & 0.010 & 0.026   & 0.006   & 0.132   & 2.408   & 36.985 \\ \cline{2-10}
+				\multicolumn{1}{|c|}{}                                           & 2                                               & 0.005                          & 0.020 & 0.008 & 0.015   & 0.006   & 0.067   & 1.764   & 25.453 \\ \cline{2-10}
+				\multicolumn{1}{|c|}{}                                           & 4                                               & 0.002                          & 0.019 & 0.006 & 0.013   & 0.005   & 0.0657  & 1.334   & 21.481 \\ \hline
 			\end{tabular}
 			\caption*{Table: average execution time of running the programs 10 times for each input file and for each different number of worker threads.}
 		\end{table}
@@ -129,16 +129,9 @@
 
 \begin{frame}{Conclusions}
 
-	The results of implementing multi-process versions of the programs using the MPI library for calculating occurring frequencies of word lengths and computing the circular
-	cross-correlation of pairs of signals clearly showed us the astonishing results and proved to be a good option to the multi-thread approach.
+	The results of implementing a multi-process version using the MPI library for the different problems proved to be a good option to the multi-thread approach. By carefully orchestrating the worker processes, we were able to speed up our solutions up to 2 times. In fact this achievement can be greater if there are more CPU cores and therefore supports a higher number of processes. A conclusion we made during tests was that if the number of processes used exceed the number of possible threads in the system, the application can suffer in performance, possibly due to the action of exchanging different processes in and out the CPU, which can be costly.
 
-	By carefully orchestrating the worker processes, we were able to speed up our solutions up to 4 times.
-	But in fact this achievement can be much greater if the hardware contains more CPU cores and therefore supports a higher maximum number of threads.
-
-	For future work, one possible improvement would be do adopt different computation approaches.
-	For example, in the case of the cross-correlation computation, multidimensional techniques for decomposition could be studied to find out if they would
-	accelerate the program.
-	Unfortunately, however, this was not possible to be conducted due to external factors beyond our grasp.
+	For future work, one possible improvement would be do adopt different computation approaches, such as using multidimensional techniques for the cross-correlation calculation.
 
 \end{frame}
 

@@ -1,6 +1,12 @@
 # Multithreaded-WordCount
 A Parallel Word and Vowel Counter
 
+![](https://img.shields.io/badge/Academical%20Project-Yes-success)
+![](https://img.shields.io/badge/Made%20With-C-lightgrey)
+![](https://img.shields.io/badge/Made%20With-MPI-lightgrey)
+![](https://img.shields.io/badge/License-Free%20To%20Use-green)
+![](https://img.shields.io/badge/Maintained-No-red)
+
 ## Description
 
 The goal of this project is to provide a fast computation program that reads in succession several text files and prints a listing of the occurring frequency of word lengths and the number of vowels in each word for each of the supplied
